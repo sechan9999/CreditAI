@@ -52,7 +52,7 @@ telco_credit_assessment/
     ```bash
     python src/app.py
     ```
-    (Server runs at http://127.0.0.1:8000)
+  
 
 4.  **Run Load Test (in another terminal):**
     ```bash
