@@ -20,7 +20,7 @@ def generate_telecom_data(n_approved=5000, n_rejected=2000):
     
     Features:
     - age: 나이
-    - income: 연소득 (만원)
+    - income: 월소득 (만원)
     - credit_history_months: 신용거래 기간 (개월)
     - num_credit_accounts: 신용 계좌 수
     - debt_ratio: 부채 비율
@@ -30,7 +30,7 @@ def generate_telecom_data(n_approved=5000, n_rejected=2000):
     # === 승인된 고객 (Known Good/Bad) ===
     approved_data = pd.DataFrame({
         'age': np.random.normal(35, 10, n_approved).clip(20, 70).astype(int),
-        'income': np.random.lognormal(8, 0.5, n_approved).clip(2000, 15000),
+        'income': (np.random.lognormal(8, 0.5, n_approved).clip(2000, 15000) / 12).astype(int),
         'credit_history_months': np.random.exponential(36, n_approved).clip(1, 240).astype(int),
         'num_credit_accounts': np.random.poisson(3, n_approved).clip(0, 15),
         'debt_ratio': np.random.beta(2, 5, n_approved),
@@ -42,7 +42,7 @@ def generate_telecom_data(n_approved=5000, n_rejected=2000):
     log_odds = (
         -2.0 
         + 0.03 * approved_data['age']
-        + 0.0003 * approved_data['income']
+        + 0.0036 * approved_data['income']  # Coeff adjusted for monthly scale (0.0003 * 12)
         + 0.01 * approved_data['credit_history_months']
         + 0.1 * approved_data['num_credit_accounts']
         - 3.0 * approved_data['debt_ratio']
@@ -56,7 +56,7 @@ def generate_telecom_data(n_approved=5000, n_rejected=2000):
     # 거절 고객은 일반적으로 더 높은 위험 프로파일
     rejected_data = pd.DataFrame({
         'age': np.random.normal(30, 12, n_rejected).clip(18, 70).astype(int),
-        'income': np.random.lognormal(7.5, 0.6, n_rejected).clip(1000, 10000),
+        'income': (np.random.lognormal(7.5, 0.6, n_rejected).clip(1000, 10000) / 12).astype(int),
         'credit_history_months': np.random.exponential(24, n_rejected).clip(0, 120).astype(int),
         'num_credit_accounts': np.random.poisson(2, n_rejected).clip(0, 10),
         'debt_ratio': np.random.beta(3, 3, n_rejected),
