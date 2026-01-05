@@ -1,10 +1,7 @@
-import os
-import joblib
-import pandas as pd
-import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from mangum import Mangum
 import sys
 
 # Ensure src module is in path to load custom class
@@ -26,6 +23,9 @@ app.add_middleware(
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
 )
+
+# Lambda Handler
+handler = Mangum(app)
 
 # Load Model
 BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
