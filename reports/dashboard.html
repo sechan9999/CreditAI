@@ -55,10 +55,11 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Monthly Income ($)</label>
-                        <input type="number" id="income"
+                        <input type="number" id="income" min="0" max="50000"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-50 p-2 border"
                             required>
                     </div>
+
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Credit History (Months)</label>
                         <input type="number" id="history"
@@ -209,7 +210,7 @@
 
         function fillRandomData() {
             document.getElementById('age').value = Math.floor(Math.random() * (70 - 20) + 20);
-            document.getElementById('income').value = Math.floor(Math.random() * (8000 - 1500) + 1500); // Monthly USD
+            document.getElementById('income').value = Math.floor(Math.random() * 50000); // 0 to 50000 USD
             document.getElementById('history').value = Math.floor(Math.random() * (120 - 6) + 6);
             document.getElementById('accounts').value = Math.floor(Math.random() * 10);
             document.getElementById('debt').value = (Math.random() * 0.8).toFixed(2);
