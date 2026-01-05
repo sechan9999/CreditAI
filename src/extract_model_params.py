@@ -1,38 +1,46 @@
-import joblib
-import pandas as pd
+
 import os
+import joblib
 import json
+import numpy as np
+import pandas as pd
+import sys
 
-base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-model_path = os.path.join(base_path, 'data', 'processed', 'best_scoring_model.pkl')
+# Ensure src is in path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from train_scoring_model import CreditScoringModel
 
-try:
-    model_obj = joblib.load(model_path)
-    
-    # Extract Scaler Params
-    means = model_obj.scaler.mean_.tolist()
-    scales = model_obj.scaler.scale_.tolist()
-    
-    # Extract Model Params
-    coefs = model_obj.model.coef_[0].tolist()
-    intercept = model_obj.model.intercept_[0]
-    
-    feature_names = model_obj.feature_cols
-    
-    params = {
-        'features': feature_names,
-        'means': means,
-        'scales': scales,
-        'coefs': coefs,
-        'intercept': intercept
-    }
-    
-    # Print formatted for easy copy-paste or programmatic use
-    print(json.dumps(params, indent=4))
-    
-    # Save to file just in case
-    with open(os.path.join(base_path, 'src', 'model_params.json'), 'w') as f:
-        json.dump(params, f, indent=4)
-        
-except Exception as e:
-    print(e)
+# Load Model
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# Depending on where this script is run, adjust path
+# Assuming run from root
+model_path = os.path.join('data', 'processed', 'scoring_model.pkl')
+
+if not os.path.exists(model_path):
+    # Try src relative
+    model_path = os.path.join(current_dir, '..', 'data', 'processed', 'scoring_model.pkl')
+
+print(f"Loading model from: {model_path}")
+model_wrapper = joblib.load(model_path)
+model = model_wrapper.model
+scaler = model_wrapper.scaler
+
+# Extract Parameters
+params = {
+    'features': model_wrapper.feature_cols,
+    'scale_mean': scaler.mean_.tolist(),
+    'scale_scale': scaler.scale_.tolist(),
+    'coef': model.coef_[0].tolist(),
+    'intercept': model.intercept_[0],
+    'base_score': 600,
+    'pdo': 20,
+    'base_odds': 5 # Updated base_odds
+}
+
+# Save to JSON
+output_path = os.path.join('data', 'processed', 'model_params.json')
+with open(output_path, 'w') as f:
+    json.dump(params, f, indent=4)
+
+print(f"Model parameters saved to: {output_path}")
+print(params)

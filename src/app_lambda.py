@@ -1,21 +1,18 @@
-import math
-import json
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from mangum import Mangum
+import json
+import os
+import math
 
-# --- Hardcoded Model Parameters for Lightweight Lambda ---
-MODEL_PARAMS = {
-    "features": ["age", "income", "credit_history_months", "num_credit_accounts", "debt_ratio", "num_late_payments"],
-    "means": [33.71204081632653, 3142.9372472184195, 32.67306122448979, 2.726530612244898, 0.3421508740102015, 1.5673469387755101],
-    "scales": [9.775277955146588, 1739.7855186869183, 33.18780893728111, 1.7005131890713896, 0.19394932709543317, 1.5314909042621074],
-    "coefs": [0.35040862346963164, 0.6578123678635274, 0.40440611833726114, 0.22966313352192982, -0.742082716270213, -0.9984769472049088],
-    "intercept": -0.5984832925687965
-}
-# -------------------------------------------------------
-
-app = FastAPI(title="Telco Credit API (Lightweight)")
+# Initialize App
+app = FastAPI(
+    title="Telco Credit Assessment API (Lite)",
+    description="Lightweight API for AWS Lambda",
+    version="1.0.0"
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -25,6 +22,68 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+handler = Mangum(app)
+
+# Load Parameters
+BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PARAMS_PATH = os.path.join(BASE_PATH, 'data', 'processed', 'model_params.json')
+
+try:
+    with open(PARAMS_PATH, 'r') as f:
+        params = json.load(f)
+    print(f"[Info] Params loaded successfully from {PARAMS_PATH}")
+except Exception as e:
+    print(f"[Error] Failed to load params: {e}")
+    params = None
+
+# Inference Logic (No Sklearn/Pandas)
+def predict(input_dict):
+    if not params:
+        raise ValueError("Model parameters not loaded")
+        
+    features = params['features']
+    scale_mean = params['scale_mean']
+    scale_scale = params['scale_scale']
+    coef = params['coef']
+    intercept = params['intercept']
+    
+    # 1. Prepare Vector & Scale
+    x_scaled = []
+    for i, feat in enumerate(features):
+        val = input_dict.get(feat)
+        if val is None:
+            raise ValueError(f"Missing feature: {feat}")
+        
+        # Standard Scaler: z = (x - u) / s
+        scaled_val = (val - scale_mean[i]) / scale_scale[i]
+        x_scaled.append(scaled_val)
+        
+    # 2. Linear Combination
+    linear_pred = intercept + sum(x * c for x, c in zip(x_scaled, coef))
+    
+    # 3. Sigmoid (Probability)
+    prob = 1 / (1 + math.exp(-linear_pred))
+    
+    # 4. Score
+    # Score = base_score + pdo * log(odds) / log(2)
+    # odds = p / (1-p)
+    # offset and factor pre-calculated or calculated here
+    
+    base_score = params['base_score']
+    pdo = params['pdo']
+    base_odds = params['base_odds']
+    
+    odds = prob / (1 - prob + 1e-10)
+    
+    factor = pdo / math.log(2)
+    offset = base_score - factor * math.log(base_odds)
+    
+    score = offset + factor * math.log(odds + 1e-10)
+    score = max(300, min(850, score)) # Clip
+    
+    return score, prob
+
+# Define Input Schema
 class ApplicantData(BaseModel):
     age: int
     income: float
@@ -33,65 +92,39 @@ class ApplicantData(BaseModel):
     debt_ratio: float
     num_late_payments: int
 
-def predict(input_dict):
-    # 1. Scaling
-    scaled_values = []
-    for i, feat in enumerate(MODEL_PARAMS['features']):
-        val = input_dict[feat]
-        mean = MODEL_PARAMS['means'][i]
-        scale = MODEL_PARAMS['scales'][i]
-        scaled_val = (val - mean) / scale
-        scaled_values.append(scaled_val)
-    
-    # 2. Linear Combination
-    log_odds = MODEL_PARAMS['intercept']
-    for i, val in enumerate(scaled_values):
-        log_odds += val * MODEL_PARAMS['coefs'][i]
-        
-    # 3. Probability (Sigmoid)
-    prob_good = 1 / (1 + math.exp(-log_odds))
-    
-    # 4. Score Conversion
-    base_score = 600
-    pdo = 20
-    base_odds = 50
-    factor = pdo / math.log(2)
-    offset = base_score - factor * math.log(base_odds)
-    
-    # Odds for scoring (using prob)
-    # odds = p / (1-p) same as exp(log_odds)
-    # score = offset + factor * log(odds) = offset + factor * log_odds
-    
-    score = offset + factor * log_odds
-    score = max(300, min(850, score)) # Clip
-    
-    return score, prob_good
-
 def get_decision(score):
-    if score >= 600: return "Approve", "Minimal/Low Risk"
-    elif score >= 550: return "Review", "Medium Risk"
-    else: return "Reject", "High/Very High Risk"
+    if score >= 600:
+        return "Approve", "Minimal/Low Risk"
+    elif score >= 550:
+        return "Review", "Medium Risk"
+    else:
+        return "Reject", "High/Very High Risk"
 
 @app.get("/")
 def home():
-    return {"message": "Telco Credit API (Lightweight Lambda Version)"}
+    return {"message": "Welcome to Telco Credit Assessment API (Lite)"}
 
 @app.post("/predict")
-def predict_endpoint(data: ApplicantData):
+def predict_credit_score(data: ApplicantData):
     try:
-        input_dict = data.dict()
-        score, prob = predict(input_dict)
-        decision, risk = get_decision(score)
+        # Pydantic v2 model_dump(), v1 dict()
+        try:
+            input_dict = data.model_dump()
+        except AttributeError:
+            input_dict = data.dict()
+            
+        score, prob_good = predict(input_dict)
+        
+        score = round(score, 1)
+        decision, risk_level = get_decision(score)
         
         return {
             "applicant_id": "N/A", 
-            "credit_score": round(score, 1),
-            "probability_good": round(prob, 4),
-            "risk_level": risk,
+            "credit_score": score,
+            "probability_good": round(prob_good, 4),
+            "risk_level": risk_level,
             "decision": decision,
             "input_summary": input_dict
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-handler = Mangum(app)

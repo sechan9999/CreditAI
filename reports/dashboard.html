@@ -239,13 +239,18 @@
                 // const response = await fetch('http://127.0.0.1:8000/predict', {
 
                 // AWS Lambda Function URL (Root path for pure Lambda)
-                const response = await fetch('https://7fnuthidejphpkbfpikezjwwly0kmhqq.lambda-url.us-east-2.on.aws/', {
+                // AWS Lambda Function URL (Root path for pure Lambda)
+                const response = await fetch('https://7fnuthidejphpkbfpikezjwwly0kmhqq.lambda-url.us-east-2.on.aws/predict', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
 
-                if (!response.ok) throw new Error('API Error');
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('API Error Details:', response.status, errorText);
+                    throw new Error(`API Error: ${response.status} ${errorText}`);
+                }
 
                 const result = await response.json();
                 updateDashboard(result, data);

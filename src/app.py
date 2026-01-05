@@ -29,7 +29,7 @@ handler = Mangum(app)
 
 # Load Model
 BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_PATH = os.path.join(BASE_PATH, 'data', 'processed', 'best_scoring_model.pkl')
+MODEL_PATH = os.path.join(BASE_PATH, 'data', 'processed', 'scoring_model.pkl')
 
 try:
     model = joblib.load(MODEL_PATH)
