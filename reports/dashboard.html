@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telco Credit Scoring Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .score-gauge {
+            transition: all 1s ease-out;
+            stroke-dasharray: 100, 100;
+            stroke-dashoffset: 100;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="mb-8 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800"><i class="fas fa-chart-line text-blue-600 mr-2"></i>Credit
+                    Assessment Dashboard</h1>
+                <p class="text-gray-500 mt-1">Real-time Credit Scoring & Risk Analysis</p>
+            </div>
+            <button onclick="fillRandomData()"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded shadow transition">
+                <i class="fas fa-random mr-2"></i> Simulate Applicant
+            </button>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- Input Form -->
+            <div class="bg-white rounded-xl shadow-lg p-6 lg:col-span-1">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">Applicant Details</h2>
+                <form id="scoringForm" onsubmit="calculateScore(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Applicant Age</label>
+                        <input type="number" id="age"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-50 p-2 border"
+                            required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Annual Income ($)</label>
+                        <input type="number" id="income"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-50 p-2 border"
+                            required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Credit History (Months)</label>
+                        <input type="number" id="history"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-50 p-2 border"
+                            required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Number of Accounts</label>
+                        <input type="number" id="accounts"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-50 p-2 border"
+                            required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Debt Ratio (0.0 - 1.0)</label>
+                        <input type="number" step="0.01" id="debt"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-50 p-2 border"
+                            required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Late Payments (Count)</label>
+                        <input type="number" id="late"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-50 p-2 border"
+                            required>
+                    </div>
+
+                    <button type="submit"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition transform hover:-translate-y-0.5 mt-4">
+                        Calculate Score
+                    </button>
+                </form>
+            </div>
+
+            <!-- Results Section -->
+            <div class="lg:col-span-2 space-y-8">
+
+                <!-- Score Card -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex flex-col md:flex-row items-center justify-between">
+
+                        <!-- Gauge Chart -->
+                        <div class="relative w-64 h-32 md:w-80 md:h-40 mb-4 md:mb-0">
+                            <canvas id="gaugeChart"></canvas>
+                            <div class="absolute inset-x-0 bottom-0 text-center -mb-2">
+                                <span id="scoreValue" class="text-4xl font-bold text-gray-800">---</span>
+                                <p class="text-sm text-gray-500">Credit Score</p>
+                            </div>
+                        </div>
+
+                        <!-- Decision Box -->
+                        <div class="text-center md:text-right w-full md:w-auto pl-0 md:pl-8">
+                            <h3 class="text-lg font-medium text-gray-500">Final Decision</h3>
+                            <div id="decisionBadge"
+                                class="inline-block px-6 py-2 rounded-full text-xl font-bold bg-gray-200 text-gray-500 mt-2 transition-colors duration-500">
+                                Pending
+                            </div>
+                            <p id="riskLevel" class="text-md text-gray-600 mt-2">Submit form to evaluate</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Charts -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Probability Bar -->
+                    <div class="bg-white rounded-xl shadow p-5">
+                        <h3 class="text-gray-700 font-semibold mb-4">Approval Probability</h3>
+                        <div class="relative pt-1">
+                            <div class="overflow-hidden h-6 mb-4 text-xs flex rounded bg-gray-200">
+                                <div id="probBar" style="width:0%"
+                                    class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-green-500 transition-all duration-1000">
+                                </div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-600">
+                                <span>High Risk (0%)</span>
+                                <span id="probText" class="font-bold text-gray-800">0%</span>
+                                <span>Low Risk (100%)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Risk Factors (Mockup) -->
+                    <div class="bg-white rounded-xl shadow p-5">
+                        <h3 class="text-gray-700 font-semibold mb-2">Key Risk Factors</h3>
+                        <ul id="riskFactors" class="space-y-2 text-sm text-gray-600">
+                            <li class="flex items-center"><i class="fas fa-info-circle text-blue-400 mr-2"></i> Fill
+                                details to see factors</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Factor Comparison Chart -->
+                <div class="bg-white rounded-xl shadow p-5">
+                    <h3 class="text-gray-700 font-semibold mb-4">Score Contribution Analysis</h3>
+                    <canvas id="contributionChart" height="100"></canvas>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- API Logic -->
+    <script>
+        // --- 1. Gauge Chart Setup ---
+        const ctxGauge = document.getElementById('gaugeChart').getContext('2d');
+        const gaugeChart = new Chart(ctxGauge, {
+            type: 'doughnut',
+            data: {
+                labels: ['Risk', 'Score', 'Potential'],
+                datasets: [{
+                    data: [300, 0, 550], // Initial range (300 to 850 total 550 span)
+                    backgroundColor: ['#e5e7eb', '#e5e7eb', '#e5e7eb'],
+                    borderWidth: 0,
+                    circumference: 180,
+                    rotation: 270,
+                    cutout: '80%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { enabled: false } }
+            }
+        });
+
+        // --- 2. Contribution Chart Setup ---
+        const ctxContrib = document.getElementById('contributionChart').getContext('2d');
+        const contribChart = new Chart(ctxContrib, {
+            type: 'bar',
+            data: {
+                labels: ['Income', 'History', 'Age', 'Accounts', 'Debt Ratio', 'Late Pay'],
+                datasets: [{
+                    label: 'Score Impact (Points)',
+                    data: [0, 0, 0, 0, 0, 0],
+                    backgroundColor: '#6366f1',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                scales: {
+                    x: { beginAtZero: true, grid: { display: false } },
+                    y: { grid: { display: false } }
+                }
+            }
+        });
+
+
+        // --- 3. Interaction Logic ---
+
+        function fillRandomData() {
+            document.getElementById('age').value = Math.floor(Math.random() * (70 - 20) + 20);
+            document.getElementById('income').value = Math.floor(Math.random() * (12000 - 3000) + 3000);
+            document.getElementById('history').value = Math.floor(Math.random() * (120 - 6) + 6);
+            document.getElementById('accounts').value = Math.floor(Math.random() * 10);
+            document.getElementById('debt').value = (Math.random() * 0.8).toFixed(2);
+            document.getElementById('late').value = Math.floor(Math.random() * 3); // Slightly biased towards good
+        }
+
+        async function calculateScore(e) {
+            e.preventDefault();
+
+            const data = {
+                age: Number(document.getElementById('age').value),
+                income: Number(document.getElementById('income').value),
+                credit_history_months: Number(document.getElementById('history').value),
+                num_credit_accounts: Number(document.getElementById('accounts').value),
+                debt_ratio: Number(document.getElementById('debt').value),
+                num_late_payments: Number(document.getElementById('late').value)
+            };
+
+            // Call API
+            try {
+                // IMPORTANT: Replace this with your actual local API URL if running locally
+                const response = await fetch('http://127.0.0.1:8000/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) throw new Error('API Error');
+
+                const result = await response.json();
+                updateDashboard(result, data);
+
+            } catch (error) {
+                console.error(error);
+                alert("Failed to connect to scoring API. Ensure 'src/app.py' is running!");
+                // Fallback simulation for demo if API fails
+                // simulateResult(data);
+            }
+        }
+
+        function updateDashboard(result, inputData) {
+            const score = result.credit_score;
+            const prob = result.probability_good * 100;
+            const decision = result.decision;
+            const risk = result.risk_level;
+
+            // 1. Update Score Text
+            const scoreEl = document.getElementById('scoreValue');
+            animateValue(scoreEl, parseInt(scoreEl.innerText) || 300, score, 1000);
+
+            // 2. Update Gauge
+            // Gauge logic: Min 300, Max 850. Span = 550.
+            // Pct = (Score - 300) / 550
+            const relScore = Math.max(0, score - 300);
+            const gaugeColor = getColorForScore(score);
+
+            gaugeChart.data.datasets[0].data = [relScore, 0, 550 - relScore];
+            gaugeChart.data.datasets[0].backgroundColor = [gaugeColor, '#e5e7eb', '#e5e7eb'];
+            gaugeChart.update();
+
+            // 3. Update Badge
+            const badge = document.getElementById('decisionBadge');
+            badge.innerText = decision.toUpperCase();
+            badge.className = `inline-block px-6 py-2 rounded-full text-xl font-bold text-white mt-2 transition-colors duration-500 shadow-md ${getBadgeColor(decision)}`;
+
+            document.getElementById('riskLevel').innerText = risk;
+
+            // 4. Update Probability Bar
+            const bar = document.getElementById('probBar');
+            bar.style.width = `${prob}%`;
+            bar.innerText = `${prob.toFixed(1)}%`;
+            bar.className = `shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-1000 ${prob > 80 ? 'bg-green-500' : (prob > 50 ? 'bg-yellow-500' : 'bg-red-500')}`;
+            document.getElementById('probText').innerText = `${prob.toFixed(1)}%`;
+
+            // 5. Update Factors List (Simple Logic based on Coefficients)
+            const list = document.getElementById('riskFactors');
+            list.innerHTML = '';
+
+            if (inputData.num_late_payments > 0) list.innerHTML += `<li class="flex items-center text-red-600"><i class="fas fa-exclamation-circle mr-2"></i> Negative: Recent Late Payments (-${inputData.num_late_payments * 28} pts)</li>`;
+            if (inputData.debt_ratio > 0.5) list.innerHTML += `<li class="flex items-center text-red-600"><i class="fas fa-exclamation-circle mr-2"></i> Negative: High Debt Ratio</li>`;
+            if (inputData.income > 8000) list.innerHTML += `<li class="flex items-center text-green-600"><i class="fas fa-check-circle mr-2"></i> Positive: High Income Stability</li>`;
+            if (inputData.credit_history_months < 12) list.innerHTML += `<li class="flex items-center text-yellow-600"><i class="fas fa-info-circle mr-2"></i> Caution: Short Credit History</li>`;
+
+            if (list.innerHTML === '') list.innerHTML = '<li class="text-gray-500 italic">No significant specific factors flagged.</li>';
+
+            // 6. Update Contribution Chart roughly (Simulation based on coefficients)
+            // Coefficients: Inc(.65), Hist(.40), Age(.35), Acc(.23), Debt(-.74), Late(-.99)
+            // We just visualize relative magnitude here for demo
+            const impact = [
+                Math.min(50, inputData.income / 200), // Mock scale
+                Math.min(30, inputData.credit_history_months / 2),
+                inputData.age / 2,
+                inputData.num_credit_accounts * 2,
+                -(inputData.debt_ratio * 30),
+                -(inputData.num_late_payments * 40)
+            ];
+            contribChart.data.datasets[0].data = impact;
+            contribChart.data.datasets[0].backgroundColor = impact.map(v => v >= 0 ? '#4ade80' : '#f87171');
+            contribChart.update();
+        }
+
+        function getColorForScore(score) {
+            if (score >= 650) return '#22c55e'; // Green
+            if (score >= 600) return '#84cc16'; // Lime
+            if (score >= 550) return '#eab308'; // Yellow
+            if (score >= 500) return '#f97316'; // Orange
+            return '#ef4444'; // Red
+        }
+
+        function getBadgeColor(decision) {
+            if (decision === 'Approve') return 'bg-green-600';
+            if (decision === 'Review') return 'bg-yellow-500';
+            return 'bg-red-600';
+        }
+
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // Fill initial random data
+        fillRandomData();
+
+    </script>
+</body>
+
+</html>

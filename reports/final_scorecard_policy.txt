@@ -1,0 +1,34 @@
+🏆 Best Method Selected: Hard Cutoff (KS = 51.63%)
+
+============================================================
+📋 CREDIT SCORECARD
+============================================================
+Base Score: 600
+PDO (Points to Double Odds): 20
+Intercept: -0.5985
+
+              Feature  Coefficient  Points per Std
+                  age       0.3504           10.11
+               income       0.6578           18.98
+credit_history_months       0.4044           11.67
+  num_credit_accounts       0.2297            6.63
+           debt_ratio      -0.7421          -21.41
+    num_late_payments      -0.9985          -28.81
+============================================================
+
+======================================================================
+📱 전화 가입 승인 결정 규칙
+======================================================================
+Score Range     Risk Level  N Customers  Bad Rate (%) Decision
+    300-500 Very High Risk         2889          75.8   Reject
+    500-550      High Risk         1833          46.7   Reject
+    550-600    Medium Risk          259          20.8   Review
+    600-650       Low Risk           18          11.1  Approve
+    650-700  Very Low Risk            1           0.0  Approve
+
+----------------------------------------------------------------------
+💡 권장 정책:
+  • Score >= 600: 자동 승인
+  • 550 <= Score < 600: 수동 심사
+  • Score < 550: 자동 거절 또는 보증금 요구
+======================================================================
