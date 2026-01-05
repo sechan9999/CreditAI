@@ -45,7 +45,7 @@ class CreditScoringModel:
         X_scaled = self.scaler.transform(X[self.feature_cols])
         return self.model.predict_proba(X_scaled)[:, 1]
     
-    def predict_score(self, X, base_score=600, pdo=20, base_odds=50):
+    def predict_score(self, X, base_score=600, pdo=20, base_odds=5):
         """
         확률을 신용 점수로 변환
         
