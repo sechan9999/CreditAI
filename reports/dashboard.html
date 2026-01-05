@@ -54,7 +54,7 @@
                             required>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Annual Income ($)</label>
+                        <label class="block text-sm font-medium text-gray-700">Monthly Income ($)</label>
                         <input type="number" id="income"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-50 p-2 border"
                             required>
@@ -209,7 +209,7 @@
 
         function fillRandomData() {
             document.getElementById('age').value = Math.floor(Math.random() * (70 - 20) + 20);
-            document.getElementById('income').value = Math.floor(Math.random() * (12000 - 3000) + 3000);
+            document.getElementById('income').value = Math.floor(Math.random() * (8000 - 1500) + 1500); // Monthly USD
             document.getElementById('history').value = Math.floor(Math.random() * (120 - 6) + 6);
             document.getElementById('accounts').value = Math.floor(Math.random() * 10);
             document.getElementById('debt').value = (Math.random() * 0.8).toFixed(2);
@@ -219,9 +219,13 @@
         async function calculateScore(e) {
             e.preventDefault();
 
+            const inputIncomeUSD = Number(document.getElementById('income').value);
+            // Convert USD to Man-won (approx rate: 1 USD = 1400 KRW = 0.14 Man-won)
+            const incomeManWon = inputIncomeUSD * 0.14;
+
             const data = {
                 age: Number(document.getElementById('age').value),
-                income: Number(document.getElementById('income').value),
+                income: incomeManWon,
                 credit_history_months: Number(document.getElementById('history').value),
                 num_credit_accounts: Number(document.getElementById('accounts').value),
                 debt_ratio: Number(document.getElementById('debt').value),
@@ -293,7 +297,7 @@
 
             if (inputData.num_late_payments > 0) list.innerHTML += `<li class="flex items-center text-red-600"><i class="fas fa-exclamation-circle mr-2"></i> Negative: Recent Late Payments (-${inputData.num_late_payments * 28} pts)</li>`;
             if (inputData.debt_ratio > 0.5) list.innerHTML += `<li class="flex items-center text-red-600"><i class="fas fa-exclamation-circle mr-2"></i> Negative: High Debt Ratio</li>`;
-            if (inputData.income > 8000) list.innerHTML += `<li class="flex items-center text-green-600"><i class="fas fa-check-circle mr-2"></i> Positive: High Income Stability</li>`;
+            if (inputData.income > 500) list.innerHTML += `<li class="flex items-center text-green-600"><i class="fas fa-check-circle mr-2"></i> Positive: High Income Stability</li>`;
             if (inputData.credit_history_months < 12) list.innerHTML += `<li class="flex items-center text-yellow-600"><i class="fas fa-info-circle mr-2"></i> Caution: Short Credit History</li>`;
 
             if (list.innerHTML === '') list.innerHTML = '<li class="text-gray-500 italic">No significant specific factors flagged.</li>';
@@ -302,7 +306,7 @@
             // Coefficients: Inc(.65), Hist(.40), Age(.35), Acc(.23), Debt(-.74), Late(-.99)
             // We just visualize relative magnitude here for demo
             const impact = [
-                Math.min(50, inputData.income / 200), // Mock scale
+                Math.min(50, inputData.income / 10), // Mock scale for Man-won (e.g. 300 -> 30)
                 Math.min(30, inputData.credit_history_months / 2),
                 inputData.age / 2,
                 inputData.num_credit_accounts * 2,
