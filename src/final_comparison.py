@@ -30,9 +30,14 @@ def train_and_evaluate(df, name, feature_cols, sample_weight=None):
         # 가중치가 있으면 직접 fit
         X_scaled = model.scaler.fit_transform(X_train)
         model.model.fit(X_scaled, y_train, sample_weight=train_weights)
-        
-        # Manually set coefs for consistency if needed, or rely on internal object
         model.is_fitted = True
+
+        # Set coefficients_ for consistency with CreditScoringModel.fit()
+        model.coefficients_ = pd.DataFrame({
+            'feature': feature_cols,
+            'coefficient': model.model.coef_[0],
+            'odds_ratio': np.exp(model.model.coef_[0])
+        }).sort_values('coefficient', ascending=False)
     else:
         model.fit(pd.DataFrame(X_train.values, columns=feature_cols), y_train)
     

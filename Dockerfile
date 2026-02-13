@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code
 COPY src/ ./src/
-COPY data/processed/best_scoring_model.pkl ./data/processed/
+COPY data/processed/scoring_model.pkl ./data/processed/
 
 # Expose port 80 to the outside world
 EXPOSE 80
