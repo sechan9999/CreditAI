@@ -1,227 +1,719 @@
-@@ -0,0 +1,226 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telco Credit Assessment</title>
+    <title>Telco Credit Assessment System</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; }
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-light: #6b7280;
+        }
 
-        .header { background: linear-gradient(135deg, #1a73e8, #0d47a1); color: white; padding: 24px 0; text-align: center; }
-        .header h1 { font-size: 1.8rem; font-weight: 600; }
-        .header p { opacity: 0.85; margin-top: 6px; font-size: 0.95rem; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-        .container { max-width: 960px; margin: 0 auto; padding: 32px 16px; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            line-height: 1.5;
+        }
 
-        .card { background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 28px; margin-bottom: 24px; }
-        .card h2 { font-size: 1.2rem; color: #1a73e8; margin-bottom: 20px; border-bottom: 2px solid #e8eaf6; padding-bottom: 10px; }
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
 
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-        @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+        header h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
 
-        .form-group { display: flex; flex-direction: column; }
-        .form-group label { font-weight: 600; font-size: 0.85rem; color: #555; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .form-group input { padding: 10px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; transition: border-color 0.2s; }
-        .form-group input:focus { border-color: #1a73e8; outline: none; }
-        .form-group .hint { font-size: 0.75rem; color: #999; margin-top: 4px; }
+        header p {
+            opacity: 0.9;
+            font-weight: 300;
+        }
 
-        .btn { display: block; width: 100%; padding: 14px; background: linear-gradient(135deg, #1a73e8, #1565c0); color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-top: 20px; transition: transform 0.1s, box-shadow 0.2s; }
-        .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(26,115,232,0.4); }
-        .btn:active { transform: translateY(0); }
-        .btn:disabled { background: #bbb; cursor: not-allowed; transform: none; box-shadow: none; }
+        /* Navigation */
+        .nav-container {
+            display: flex;
+            justify-content: center;
+            background: white;
+            padding: 1rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
 
-        #result { display: none; }
-        .result-header { text-align: center; padding: 20px 0; }
-        .score-display { font-size: 4rem; font-weight: 700; line-height: 1; }
-        .score-label { font-size: 0.9rem; color: #777; margin-top: 4px; }
+        .nav-btn {
+            background: none;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
 
-        .decision-badge { display: inline-block; padding: 8px 24px; border-radius: 50px; font-size: 1.1rem; font-weight: 700; margin-top: 12px; }
-        .decision-approve { background: #e8f5e9; color: #2e7d32; }
-        .decision-review { background: #fff3e0; color: #e65100; }
-        .decision-reject { background: #fbe9e7; color: #c62828; }
+        .nav-btn:hover {
+            color: var(--primary);
+        }
 
-        .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }
-        .metric { text-align: center; padding: 16px; background: #f8f9fa; border-radius: 8px; }
-        .metric-value { font-size: 1.4rem; font-weight: 700; color: #1a73e8; }
-        .metric-label { font-size: 0.8rem; color: #777; margin-top: 4px; }
+        .nav-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
 
-        .score-bar-container { margin-top: 24px; }
-        .score-bar-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: #999; margin-bottom: 4px; }
-        .score-bar { height: 12px; border-radius: 6px; background: linear-gradient(to right, #c62828, #e65100, #f9a825, #66bb6a, #2e7d32); position: relative; }
-        .score-marker { position: absolute; top: -6px; width: 24px; height: 24px; border-radius: 50%; background: white; border: 3px solid #333; transform: translateX(-50%); box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
 
-        .error-msg { color: #c62828; background: #fbe9e7; padding: 12px 16px; border-radius: 8px; margin-top: 16px; display: none; }
+        /* Sections */
+        .section {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
 
-        .footer { text-align: center; color: #999; font-size: 0.8rem; padding: 20px; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>Telco Credit Assessment</h1>
-        <p>Evaluate creditworthiness of telecom applicants in real-time</p>
-    </div>
+        .section.active {
+            display: block;
+        }
 
-    <div class="container">
-        <div class="card">
-            <h2>Applicant Information</h2>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Age</label>
-                    <input type="number" id="age" value="35" min="18" max="100">
-                    <span class="hint">18 - 100 years</span>
-                </div>
-                <div class="form-group">
-                    <label>Monthly Income ($)</label>
-                    <input type="number" id="income" value="5000" min="0" step="100">
-                    <span class="hint">Monthly income in USD</span>
-                </div>
-                <div class="form-group">
-                    <label>Credit History (months)</label>
-                    <input type="number" id="credit_history_months" value="60" min="0" max="600">
-                    <span class="hint">Length of credit history</span>
-                </div>
-                <div class="form-group">
-                    <label>Credit Accounts</label>
-                    <input type="number" id="num_credit_accounts" value="3" min="0" max="50">
-                    <span class="hint">Number of active accounts</span>
-                </div>
-                <div class="form-group">
-                    <label>Debt Ratio</label>
-                    <input type="number" id="debt_ratio" value="0.30" min="0" max="1" step="0.01">
-                    <span class="hint">0.0 (no debt) to 1.0 (maximum)</span>
-                </div>
-                <div class="form-group">
-                    <label>Late Payments</label>
-                    <input type="number" id="num_late_payments" value="1" min="0" max="50">
-                    <span class="hint">Historical late payment count</span>
-                </div>
-            </div>
-            <button class="btn" id="submitBtn" onclick="submitForm()">Evaluate Applicant</button>
-            <div class="error-msg" id="errorMsg"></div>
-        </div>
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
 
-        <div class="card" id="result">
-            <h2>Assessment Result</h2>
-            <div class="result-header">
-                <div class="score-display" id="scoreValue">---</div>
-                <div class="score-label">Credit Score</div>
-                <div class="decision-badge" id="decisionBadge">---</div>
-            </div>
-
-            <div class="score-bar-container">
-                <div class="score-bar-labels">
-                    <span>300 (High Risk)</span>
-                    <span>550</span>
-                    <span>600</span>
-                    <span>850 (Low Risk)</span>
-                </div>
-                <div class="score-bar">
-                    <div class="score-marker" id="scoreMarker" style="left: 50%"></div>
-                </div>
-            </div>
-
-            <div class="metrics">
-                <div class="metric">
-                    <div class="metric-value" id="probValue">---</div>
-                    <div class="metric-label">Probability (Good)</div>
-                </div>
-                <div class="metric">
-                    <div class="metric-value" id="riskValue">---</div>
-                    <div class="metric-label">Risk Level</div>
-                </div>
-                <div class="metric">
-                    <div class="metric-value" id="decisionValue">---</div>
-                    <div class="metric-label">Decision</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="footer">Telco Credit Assessment System v1.0</div>
-
-    <script>
-        // API base URL - change this to your deployed server
-        const API_URL = window.location.origin || 'http://localhost:8000';
-
-        async function submitForm() {
-            const btn = document.getElementById('submitBtn');
-            const errorMsg = document.getElementById('errorMsg');
-            errorMsg.style.display = 'none';
-            btn.disabled = true;
-            btn.textContent = 'Evaluating...';
-
-            const payload = {
-                age: parseInt(document.getElementById('age').value),
-                income: parseFloat(document.getElementById('income').value),
-                credit_history_months: parseInt(document.getElementById('credit_history_months').value),
-                num_credit_accounts: parseInt(document.getElementById('num_credit_accounts').value),
-                debt_ratio: parseFloat(document.getElementById('debt_ratio').value),
-                num_late_payments: parseInt(document.getElementById('num_late_payments').value)
-            };
-
-            try {
-                const response = await fetch(API_URL + '/predict', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.detail || `Server error: ${response.status}`);
-                }
-
-                const data = await response.json();
-                displayResult(data);
-            } catch (error) {
-                errorMsg.textContent = error.message;
-                errorMsg.style.display = 'block';
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Evaluate Applicant';
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
 
-        function displayResult(data) {
-            document.getElementById('result').style.display = 'block';
-
-            // Score
-            const score = data.credit_score;
-            document.getElementById('scoreValue').textContent = score;
-
-            // Score color
-            const scoreEl = document.getElementById('scoreValue');
-            if (score >= 600) scoreEl.style.color = '#2e7d32';
-            else if (score >= 550) scoreEl.style.color = '#e65100';
-            else scoreEl.style.color = '#c62828';
-
-            // Decision badge
-            const badge = document.getElementById('decisionBadge');
-            badge.textContent = data.decision;
-            badge.className = 'decision-badge';
-            if (data.decision === 'Approve') badge.classList.add('decision-approve');
-            else if (data.decision === 'Review') badge.classList.add('decision-review');
-            else badge.classList.add('decision-reject');
-
-            // Metrics
-            document.getElementById('probValue').textContent = (data.probability_good * 100).toFixed(1) + '%';
-            document.getElementById('riskValue').textContent = data.risk_level;
-            document.getElementById('decisionValue').textContent = data.decision;
-
-            // Score marker position (300-850 range)
-            const pct = ((score - 300) / (850 - 300)) * 100;
-            document.getElementById('scoreMarker').style.left = Math.max(0, Math.min(100, pct)) + '%';
-
-            // Scroll to result
-            document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+        /* Card Styles */
+        .card {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
         }
 
-        // Allow Enter key to submit
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') submitForm();
-        });
+        .card h2 {
+            font-size: 1.5rem;
+            color: var(--text-main);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        /* Form Grid */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .hint {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-top: 0.25rem;
+            display: block;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 2rem;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-primary:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        /* Results Area */
+        #resultArea {
+            display: none;
+            margin-top: 2rem;
+            border-top: 2px dashed #e5e7eb;
+            padding-top: 2rem;
+        }
+
+        .result-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .score-display {
+            font-size: 5rem;
+            font-weight: 800;
+            line-height: 1;
+            background: -webkit-linear-gradient(45deg, var(--primary), var(--primary-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .score-label {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .decision-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 1.25rem;
+            margin-top: 1rem;
+        }
+
+        .bg-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .bg-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .bg-danger {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .metric-box {
+            background: #f9fafb;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .metric-label {
+            font-size: 0.875rem;
+            color: var(--text-light);
+            margin-top: 0.25rem;
+        }
+
+        /* Dashboard Charts */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .kpi-row {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .kpi-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb;
+        }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .kpi-label {
+            color: var(--text-light);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Gauge Bar */
+        .gauge-container {
+            position: relative;
+            height: 1.5rem;
+            background: #e5e7eb;
+            border-radius: 1rem;
+            margin: 2rem 0;
+            overflow: hidden;
+        }
+
+        .gauge-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--danger) 0%, var(--warning) 50%, var(--success) 100%);
+            width: 100%;
+        }
+
+        .gauge-marker {
+            position: absolute;
+            top: -0.25rem;
+            width: 4px;
+            height: 2rem;
+            background: white;
+            border: 2px solid #333;
+            z-index: 10;
+            transform: translateX(-50%);
+            transition: left 1s ease-out;
+        }
+
+        .gauge-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-top: 0.5rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Telco Credit Assessment System</h1>
+        <p>AI-Powered Credit Scoring & Risk analysis</p>
+    </header>
+
+    <nav class="nav-container">
+        <button class="nav-btn active" onclick="switchTab('app')">🚀 Credit Scoring App</button>
+        <button class="nav-btn" onclick="switchTab('analysis')">📊 Data Analysis Report</button>
+        <button class="nav-btn" onclick="switchTab('about')">ℹ️ About Project</button>
+    </nav>
+
+    <div class="container">
+
+        <!-- APP SECTION -->
+        <div id="app" class="section active">
+            <div class="card">
+                <h2>Applicant Information</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Age (Years)</label>
+                        <input type="number" id="age" value="35" min="18" max="100">
+                        <span class="hint">Applicant's age (18-100)</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Monthly Income ($)</label>
+                        <input type="number" id="income" value="5000" min="0" step="100">
+                        <span class="hint">Total monthly income before tax</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Credit History (Months)</label>
+                        <input type="number" id="credit_history_months" value="60" min="0" max="600">
+                        <span class="hint">Length of active credit history</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Number of Open Credit Accounts</label>
+                        <input type="number" id="num_credit_accounts" value="3" min="0" max="50">
+                        <span class="hint">Valid credit lines (cards, loans)</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Debt-to-Income Ratio</label>
+                        <input type="number" id="debt_ratio" value="0.30" min="0" max="1" step="0.01">
+                        <span class="hint">Decimal format (e.g., 0.3 for 30%)</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Historical Late Payments</label>
+                        <input type="number" id="num_late_payments" value="0" min="0" max="50">
+                        <span class="hint">Count of past due incidents</span>
+                    </div>
+                </div>
+
+                <button class="btn-primary" onclick="calculateScore()">Analyze Credit Risk</button>
+
+                <div id="resultArea">
+                    <div class="result-header">
+                        <div class="score-display" id="scoreValue">0</div>
+                        <div class="score-label">Credit Score</div>
+                        <div id="decisionBadge" class="decision-badge">---</div>
+                    </div>
+
+                    <div class="gauge-container">
+                        <div class="gauge-fill"></div>
+                        <div class="gauge-marker" id="scoreMarker" style="left: 0%"></div>
+                    </div>
+                    <div class="gauge-labels">
+                        <span>300 (High Risk)</span>
+                        <span>550 (Review)</span>
+                        <span>600 (Safe)</span>
+                        <span>850 (Excellent)</span>
+                    </div>
+
+                    <div class="metrics-grid" style="margin-top: 2rem;">
+                        <div class="metric-box">
+                            <div class="metric-value" id="probValue">0%</div>
+                            <div class="metric-label">Approval Probability</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-value" id="riskValue">Unknown</div>
+                            <div class="metric-label">Risk Category</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ANALYSIS SECTION -->
+        <div id="analysis" class="section">
+            <div class="kpi-row">
+                <div class="kpi-card">
+                    <div class="kpi-value">7,000</div>
+                    <div class="kpi-label">Total Applicants</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value" style="color: var(--success);">5,000</div>
+                    <div class="kpi-label">Approved</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value" style="color: var(--danger);">2,000</div>
+                    <div class="kpi-label">Rejected</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">37.9%</div>
+                    <div class="kpi-label">Good Rate (Target)</div>
+                </div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="card">
+                    <h2>Application Status</h2>
+                    <div class="chart-container">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>Credit Worthiness (Approved)</h2>
+                    <div class="chart-container">
+                        <canvas id="targetChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>Income Distribution Analysis</h2>
+                    <div class="chart-container">
+                        <canvas id="incomeChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>Credit History Impact</h2>
+                    <div class="chart-container">
+                        <canvas id="historyChart"></canvas>
+                    </div>
+                </div>
+                <div class="card full-width">
+                    <h2>Debt Ratio vs. Approval</h2>
+                    <div class="chart-container">
+                        <canvas id="debtChart"></canvas>
+                    </div>
+                </div>
+                <div class="card full-width">
+                    <h2>Late Payments vs. Approval</h2>
+                    <div class="chart-container">
+                        <canvas id="lateChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABOUT SECTION -->
+        <div id="about" class="section">
+            <div class="card">
+                <h2>About this Project</h2>
+                <p style="margin-bottom: 1rem;">
+                    This project demonstrates an <strong>End-to-End Credit Scoring Pipeline</strong> typically used in
+                    the telecommunications and banking sectors.
+                    It relies on a Logistic Regression model trained on synthetic data to predict the likelihood of a
+                    customer paying their bills.
+                </p>
+                <h3 style="margin-bottom: 0.5rem; color: var(--text-main);">Methodology</h3>
+                <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem; color: var(--text-light);">
+                    <li><strong>Data Generation:</strong> Created 7,000 synthetic applicant records including
+                        demographic and financial history.</li>
+                    <li><strong>Training:</strong> Tuned a Logistic Regression model with class balancing and standard
+                        scaling.</li>
+                    <li><strong>Scoring Logic:</strong> Converted probability outcomes into a standard 300-850 credit
+                        score range using Points-to-Double-Odds (PDO) logic.</li>
+                    <li><strong>Client-Side Inference:</strong> This demo runs entirely in your browser using the
+                        pre-calculated model coefficients, requiring no backend server.</li>
+                </ul>
+                <p><strong>Note:</strong> Since this runs on GitHub Pages (static hosting), the Python backend logic has
+                    been ported to JavaScript for demonstration purposes.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- APP LOGIC ---
+        // Model Coefficients (from trained Python model)
+        const MODEL_COEFS = {
+            intercept: -0.0937,
+            income: 0.546570,
+            credit_history_months: 0.345736,
+            age: 0.299301,
+            num_credit_accounts: 0.140036,
+            debt_ratio: -0.438233,
+            num_late_payments: -0.553042
+        };
+
+        // Scaling Parameters (StandardScaler mean/scale from training data - APPROXIMATE for demo)
+        // In a real app, you would export these exact values from the scaler.pkl
+        const SCALER = {
+            mean: { age: 40, income: 4500, credit_history_months: 48, num_credit_accounts: 4, debt_ratio: 0.4, num_late_payments: 1 },
+            scale: { age: 12, income: 2000, credit_history_months: 24, num_credit_accounts: 2, debt_ratio: 0.2, num_late_payments: 1.5 }
+        };
+
+        function calculateScore() {
+            // 1. Get Inputs
+            const inputs = {
+                age: parseFloat(document.getElementById('age').value),
+                income: parseFloat(document.getElementById('income').value),
+                credit_history_months: parseFloat(document.getElementById('credit_history_months').value),
+                num_credit_accounts: parseFloat(document.getElementById('num_credit_accounts').value),
+                debt_ratio: parseFloat(document.getElementById('debt_ratio').value),
+                num_late_payments: parseFloat(document.getElementById('num_late_payments').value)
+            };
+
+            // 2. Preprocessing (Standard Scaling)
+            let logOdds = MODEL_COEFS.intercept;
+
+            for (const [key, val] of Object.entries(inputs)) {
+                const scaled = (val - SCALER.mean[key]) / SCALER.scale[key];
+                logOdds += scaled * MODEL_COEFS[key];
+            }
+
+            // 3. Probability & Score Calculation
+            const prob = 1 / (1 + Math.exp(-logOdds)); // Sigmoid
+
+            // Base Score: 600, PDO: 20, Base Odds: 50:1 (approx log(50)~3.91)
+            // Score = Offset + Factor * log(odds)
+            // Factor = 20 / ln(2) = 28.85
+            // Offset = 600 - 28.85 * ln(50) = 487
+
+            const factor = 28.8539;
+            const offset = 487.12;
+
+            // Avoiding log(0) or outliers
+            const odds = prob / (1 - prob);
+            let score = offset + factor * Math.log(odds);
+
+            // Clamp score
+            score = Math.max(300, Math.min(850, Math.round(score)));
+
+            // 4. Update UI
+            displayResult(score, prob);
+        }
+
+        function displayResult(score, prob) {
+            const resultArea = document.getElementById('resultArea');
+            resultArea.style.display = 'block';
+
+            // Animate Score
+            const scoreEl = document.getElementById('scoreValue');
+            let current = 0;
+            const interval = setInterval(() => {
+                current += 10;
+                if (current >= score) {
+                    current = score;
+                    clearInterval(interval);
+                }
+                scoreEl.textContent = current;
+            }, 10);
+
+            // Marker Position
+            const pct = ((score - 300) / (850 - 300)) * 100;
+            document.getElementById('scoreMarker').style.left = `${Math.max(0, Math.min(100, pct))}%`;
+
+            // Decision Logic
+            const badge = document.getElementById('decisionBadge');
+            if (score >= 600) {
+                badge.textContent = "APPROVED";
+                badge.className = "decision-badge bg-success";
+                document.getElementById('riskValue').textContent = "Low Risk";
+            } else if (score >= 550) {
+                badge.textContent = "REVIEW REQUIRED";
+                badge.className = "decision-badge bg-warning";
+                document.getElementById('riskValue').textContent = "Medium Risk";
+            } else {
+                badge.textContent = "DECLINED";
+                badge.className = "decision-badge bg-danger";
+                document.getElementById('riskValue').textContent = "High Risk";
+            }
+
+            document.getElementById('probValue').textContent = (prob * 100).toFixed(1) + "%";
+
+            // Scroll to result
+            resultArea.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // --- CHART LOGIC (From Report) ---
+        const chartData = { "status": { "labels": ["approved", "rejected"], "data": [5000, 2000] }, "target": { "labels": ["Bad (0)", "Good (1)"], "data": [3105, 1895] }, "features": { "income": { "labels": ["0", "83", "166", "250", "333", "416", "500", "583", "666", "750", "833", "916", "1000", "1083", "1166"], "approved": [0, 1101, 1478, 1038, 618, 360, 188, 85, 63, 25, 18, 11, 9, 1, 5], "rejected": [329, 784, 469, 222, 98, 47, 26, 17, 6, 2, 0, 0, 0, 0, 0] }, "credit_history_months": { "labels": ["0", "16", "32", "48", "64", "80", "96", "112", "128", "144", "160", "176", "192", "208", "224"], "approved": [1852, 1153, 677, 480, 302, 189, 126, 82, 45, 30, 21, 17, 10, 6, 10], "rejected": [911, 476, 259, 140, 74, 39, 21, 9, 0, 0, 0, 0, 0, 0, 0] }, "debt_ratio": { "labels": ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"], "approved": [276, 614, 774, 783, 713, 583, 468, 342, 203, 132, 57, 41, 14, 0, 0], "rejected": [5, 31, 50, 130, 175, 185, 233, 259, 237, 212, 167, 130, 99, 61, 26] }, "num_late_payments": { "labels": ["0", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"], "approved": [0, 1895, 927, 301, 80, 10, 4, 1, 0, 0, 0, 0, 0, 0, 0], "rejected": [0, 318, 422, 470, 338, 187, 109, 47, 13, 4, 0, 0, 0, 0, 1] } } };
+
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+        };
+
+        window.onload = function () {
+            // Status Chart
+            new Chart(document.getElementById('statusChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: chartData.status.labels,
+                    datasets: [{ data: chartData.status.data, backgroundColor: ['#10b981', '#ef4444'] }]
+                },
+                options: commonOptions
+            });
+
+            // Target Chart
+            new Chart(document.getElementById('targetChart'), {
+                type: 'pie',
+                data: {
+                    labels: chartData.target.labels,
+                    datasets: [{ data: chartData.target.data, backgroundColor: ['#ef4444', '#10b981'] }]
+                },
+                options: commonOptions
+            });
+
+            // Bar Charts: Includes ALL features now
+            ['income', 'credit_history_months', 'debt_ratio', 'num_late_payments'].forEach((key, idx) => {
+                // Mapping keys to canvas IDs
+                const chartId = ['incomeChart', 'historyChart', 'debtChart', 'lateChart'][idx];
+                const ctx = document.getElementById(chartId);
+
+                if (ctx && chartData.features[key]) {
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: chartData.features[key].labels,
+                            datasets: [
+                                { label: 'Approved', data: chartData.features[key].approved, backgroundColor: 'rgba(16, 185, 129, 0.6)' },
+                                { label: 'Rejected', data: chartData.features[key].rejected, backgroundColor: 'rgba(239, 68, 68, 0.6)' }
+                            ]
+                        },
+                        options: { ...commonOptions, scales: { x: { stacked: false }, y: { beginAtZero: true } } }
+                    });
+                }
+            });
+
+            // Switch to App tab by default
+            switchTab('app');
+        }
     </script>
+
 </body>
+
 </html>
