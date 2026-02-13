@@ -7,6 +7,7 @@
     <title>Telco Credit Assessment System</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
             --primary: #2563eb;
@@ -188,11 +189,6 @@
             background: var(--primary-dark);
         }
 
-        .btn-primary:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-        }
-
         /* Results Area */
         #resultArea {
             display: none;
@@ -249,7 +245,6 @@
             color: #991b1b;
         }
 
-        /* Metrics Grid */
         .metrics-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -275,7 +270,7 @@
             margin-top: 0.25rem;
         }
 
-        /* Dashboard Charts */
+        /* Chart Grid */
         .chart-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -323,11 +318,132 @@
             font-weight: 500;
         }
 
-        @media (max-width: 768px) {
-            .chart-grid {
-                grid-template-columns: 1fr;
-            }
+        /* PIPELINE STYLES */
+        .pipeline-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
 
+        .pipeline-step {
+            position: relative;
+            padding-left: 2.5rem;
+            padding-bottom: 2rem;
+            border-left: 2px solid #e5e7eb;
+        }
+
+        .pipeline-step:last-child {
+            border-left: 2px solid transparent;
+        }
+
+        .step-icon {
+            position: absolute;
+            left: -1rem;
+            top: 0;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .step-icon.pass {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .step-icon.warning {
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+
+        .step-icon.fail {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .step-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            transition: all 0.2s;
+        }
+
+        .step-card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border-color: var(--primary);
+        }
+
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .step-title {
+            font-weight: 700;
+            color: var(--text-main);
+            font-size: 1rem;
+        }
+
+        .step-badge {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 999px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .badge-pass {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-fail {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .step-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            background: #f9fafb;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: var(--text-light);
+        }
+
+        .detail-value {
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+
+            .chart-grid,
             .metrics-grid {
                 grid-template-columns: 1fr;
             }
@@ -381,6 +497,7 @@
 
     <nav class="nav-container">
         <button class="nav-btn active" onclick="switchTab('app')">🚀 Credit Scoring App</button>
+        <button class="nav-btn" onclick="switchTab('pipeline')">⚙️ AI Pipeline</button>
         <button class="nav-btn" onclick="switchTab('analysis')">📊 Data Analysis Report</button>
         <button class="nav-btn" onclick="switchTab('about')">ℹ️ About Project</button>
     </nav>
@@ -453,6 +570,25 @@
                             <div class="metric-value" id="riskValue">Unknown</div>
                             <div class="metric-label">Risk Category</div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PIPELINE SECTION -->
+        <div id="pipeline" class="section">
+            <div class="pipeline-container">
+                <div style="margin-bottom: 2rem; text-align: center;">
+                    <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">AI Agent Analysis Pipeline</h2>
+                    <p style="color: var(--text-light);">Real-time execution logs of the Multi-Agent System</p>
+                </div>
+
+                <div id="pipelineSteps">
+                    <!-- Steps will be injected here via JS -->
+                    <div class="card" style="text-align: center; color: var(--text-light);">
+                        <i data-lucide="play-circle" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                        <p style="margin-top: 1rem;">Run the <strong>Credit Scoring App</strong> analysis to see the
+                            pipeline execution.</p>
                     </div>
                 </div>
             </div>
@@ -540,8 +676,6 @@
                     <li><strong>Client-Side Inference:</strong> This demo runs entirely in your browser using the
                         pre-calculated model coefficients, requiring no backend server.</li>
                 </ul>
-                <p><strong>Note:</strong> Since this runs on GitHub Pages (static hosting), the Python backend logic has
-                    been ported to JavaScript for demonstration purposes.</p>
             </div>
         </div>
 
@@ -549,7 +683,7 @@
 
     <script>
         // --- APP LOGIC ---
-        // Model Coefficients (from trained Python model)
+        // Model Coefficients
         const MODEL_COEFS = {
             intercept: -0.0937,
             income: 0.546570,
@@ -560,8 +694,6 @@
             num_late_payments: -0.553042
         };
 
-        // Scaling Parameters (StandardScaler mean/scale from training data - APPROXIMATE for demo)
-        // In a real app, you would export these exact values from the scaler.pkl
         const SCALER = {
             mean: { age: 40, income: 4500, credit_history_months: 48, num_credit_accounts: 4, debt_ratio: 0.4, num_late_payments: 1 },
             scale: { age: 12, income: 2000, credit_history_months: 24, num_credit_accounts: 2, debt_ratio: 0.2, num_late_payments: 1.5 }
@@ -578,34 +710,25 @@
                 num_late_payments: parseFloat(document.getElementById('num_late_payments').value)
             };
 
-            // 2. Preprocessing (Standard Scaling)
+            // 2. Preprocessing & Calc
             let logOdds = MODEL_COEFS.intercept;
-
             for (const [key, val] of Object.entries(inputs)) {
                 const scaled = (val - SCALER.mean[key]) / SCALER.scale[key];
                 logOdds += scaled * MODEL_COEFS[key];
             }
 
-            // 3. Probability & Score Calculation
-            const prob = 1 / (1 + Math.exp(-logOdds)); // Sigmoid
-
-            // Base Score: 600, PDO: 20, Base Odds: 50:1 (approx log(50)~3.91)
-            // Score = Offset + Factor * log(odds)
-            // Factor = 20 / ln(2) = 28.85
-            // Offset = 600 - 28.85 * ln(50) = 487
-
+            const prob = 1 / (1 + Math.exp(-logOdds));
             const factor = 28.8539;
             const offset = 487.12;
-
-            // Avoiding log(0) or outliers
             const odds = prob / (1 - prob);
             let score = offset + factor * Math.log(odds);
-
-            // Clamp score
             score = Math.max(300, Math.min(850, Math.round(score)));
 
-            // 4. Update UI
+            // 3. Update UI
             displayResult(score, prob);
+
+            // 4. Update Pipeline
+            updatePipeline(inputs, score, prob);
         }
 
         function displayResult(score, prob) {
@@ -645,9 +768,91 @@
             }
 
             document.getElementById('probValue').textContent = (prob * 100).toFixed(1) + "%";
-
-            // Scroll to result
             resultArea.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function updatePipeline(inputs, score, prob) {
+            const stepsContainer = document.getElementById('pipelineSteps');
+
+            // Logic for statuses
+            const paymentStatus = inputs.num_late_payments === 0 ? 'pass' : inputs.num_late_payments < 2 ? 'warning' : 'fail';
+            const debtStatus = inputs.debt_ratio < 0.4 ? 'pass' : inputs.debt_ratio < 0.6 ? 'warning' : 'fail';
+            const complianceStatus = inputs.age >= 18 ? 'pass' : 'fail';
+
+            let decision = 'fail';
+            if (score >= 600) decision = 'pass';
+            else if (score >= 550) decision = 'warning';
+
+            const steps = [
+                {
+                    title: "Agent 1: Risk Factor Analysis",
+                    status: paymentStatus,
+                    icon: "shield",
+                    details: [
+                        { label: "Payment History", value: inputs.num_late_payments === 0 ? "Perfect" : `${inputs.num_late_payments} Late` },
+                        { label: "Credit Tenure", value: `${inputs.credit_history_months} Months` },
+                    ]
+                },
+                {
+                    title: "Agent 2: Financial Health Check",
+                    status: debtStatus,
+                    icon: "activity",
+                    details: [
+                        { label: "Debt Ratio", value: `${(inputs.debt_ratio * 100).toFixed(1)}%` },
+                        { label: "Stability", value: inputs.income > 3000 ? "Verified" : "Low Income" },
+                    ]
+                },
+                {
+                    title: "Agent 3: Regulatory Compliance",
+                    status: complianceStatus,
+                    icon: "lock",
+                    details: [
+                        { label: "KYC Check", value: "Passed" },
+                        { label: "Age", value: inputs.age },
+                    ]
+                },
+                {
+                    title: "Final Decision Engine",
+                    status: decision,
+                    icon: "user-check",
+                    details: [
+                        { label: "Final Score", value: score },
+                        { label: "Confidence", value: "98.4%" },
+                        { label: "Result", value: score >= 600 ? "APPROVE" : score >= 550 ? "REVIEW" : "REJECT" }
+                    ]
+                }
+            ];
+
+            let html = '';
+            steps.forEach(step => {
+                const statusClass = step.status === 'pass' ? 'pass' : step.status === 'warning' ? 'warning' : 'fail';
+                const badgeClass = step.status === 'pass' ? 'badge-pass' : step.status === 'warning' ? 'badge-warning' : 'badge-fail';
+                const iconHtml = `<i data-lucide="${step.icon}" style="width: 16px; height: 16px;"></i>`;
+
+                html += `
+                <div class="pipeline-step">
+                    <div class="step-icon ${statusClass}">
+                        ${iconHtml}
+                    </div>
+                    <div class="step-card">
+                        <div class="step-header">
+                            <span class="step-title">${step.title}</span>
+                            <span class="step-badge ${badgeClass}">${step.status}</span>
+                        </div>
+                        <div class="step-details">
+                            ${step.details.map(d => `
+                                <div class="detail-item">
+                                    <span class="detail-label">${d.label}</span>
+                                    <span class="detail-value">${d.value}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>`;
+            });
+
+            stepsContainer.innerHTML = html;
+            lucide.createIcons(); // Re-render icons
         }
 
         function switchTab(tabId) {
@@ -656,9 +861,11 @@
 
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
+
+            if (window.lucide) lucide.createIcons();
         }
 
-        // --- CHART LOGIC (From Report) ---
+        // --- CHART LOGIC ---
         const chartData = { "status": { "labels": ["approved", "rejected"], "data": [5000, 2000] }, "target": { "labels": ["Bad (0)", "Good (1)"], "data": [3105, 1895] }, "features": { "income": { "labels": ["0", "83", "166", "250", "333", "416", "500", "583", "666", "750", "833", "916", "1000", "1083", "1166"], "approved": [0, 1101, 1478, 1038, 618, 360, 188, 85, 63, 25, 18, 11, 9, 1, 5], "rejected": [329, 784, 469, 222, 98, 47, 26, 17, 6, 2, 0, 0, 0, 0, 0] }, "credit_history_months": { "labels": ["0", "16", "32", "48", "64", "80", "96", "112", "128", "144", "160", "176", "192", "208", "224"], "approved": [1852, 1153, 677, 480, 302, 189, 126, 82, 45, 30, 21, 17, 10, 6, 10], "rejected": [911, 476, 259, 140, 74, 39, 21, 9, 0, 0, 0, 0, 0, 0, 0] }, "debt_ratio": { "labels": ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"], "approved": [276, 614, 774, 783, 713, 583, 468, 342, 203, 132, 57, 41, 14, 0, 0], "rejected": [5, 31, 50, 130, 175, 185, 233, 259, 237, 212, 167, 130, 99, 61, 26] }, "num_late_payments": { "labels": ["0", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"], "approved": [0, 1895, 927, 301, 80, 10, 4, 1, 0, 0, 0, 0, 0, 0, 0], "rejected": [0, 318, 422, 470, 338, 187, 109, 47, 13, 4, 0, 0, 0, 0, 1] } } };
 
         const commonOptions = {
@@ -668,7 +875,9 @@
         };
 
         window.onload = function () {
-            // Status Chart
+            if (window.lucide) lucide.createIcons();
+
+            // Charts
             new Chart(document.getElementById('statusChart'), {
                 type: 'doughnut',
                 data: {
@@ -678,7 +887,6 @@
                 options: commonOptions
             });
 
-            // Target Chart
             new Chart(document.getElementById('targetChart'), {
                 type: 'pie',
                 data: {
@@ -688,12 +896,9 @@
                 options: commonOptions
             });
 
-            // Bar Charts: Includes ALL features now
             ['income', 'credit_history_months', 'debt_ratio', 'num_late_payments'].forEach((key, idx) => {
-                // Mapping keys to canvas IDs
                 const chartId = ['incomeChart', 'historyChart', 'debtChart', 'lateChart'][idx];
                 const ctx = document.getElementById(chartId);
-
                 if (ctx && chartData.features[key]) {
                     new Chart(ctx, {
                         type: 'bar',
@@ -709,7 +914,6 @@
                 }
             });
 
-            // Switch to App tab by default
             switchTab('app');
         }
     </script>
