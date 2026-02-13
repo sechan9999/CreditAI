@@ -1,0 +1,227 @@
+@@ -0,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telco Credit Assessment</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; }
+
+        .header { background: linear-gradient(135deg, #1a73e8, #0d47a1); color: white; padding: 24px 0; text-align: center; }
+        .header h1 { font-size: 1.8rem; font-weight: 600; }
+        .header p { opacity: 0.85; margin-top: 6px; font-size: 0.95rem; }
+
+        .container { max-width: 960px; margin: 0 auto; padding: 32px 16px; }
+
+        .card { background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 28px; margin-bottom: 24px; }
+        .card h2 { font-size: 1.2rem; color: #1a73e8; margin-bottom: 20px; border-bottom: 2px solid #e8eaf6; padding-bottom: 10px; }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-weight: 600; font-size: 0.85rem; color: #555; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group input { padding: 10px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; transition: border-color 0.2s; }
+        .form-group input:focus { border-color: #1a73e8; outline: none; }
+        .form-group .hint { font-size: 0.75rem; color: #999; margin-top: 4px; }
+
+        .btn { display: block; width: 100%; padding: 14px; background: linear-gradient(135deg, #1a73e8, #1565c0); color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-top: 20px; transition: transform 0.1s, box-shadow 0.2s; }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(26,115,232,0.4); }
+        .btn:active { transform: translateY(0); }
+        .btn:disabled { background: #bbb; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        #result { display: none; }
+        .result-header { text-align: center; padding: 20px 0; }
+        .score-display { font-size: 4rem; font-weight: 700; line-height: 1; }
+        .score-label { font-size: 0.9rem; color: #777; margin-top: 4px; }
+
+        .decision-badge { display: inline-block; padding: 8px 24px; border-radius: 50px; font-size: 1.1rem; font-weight: 700; margin-top: 12px; }
+        .decision-approve { background: #e8f5e9; color: #2e7d32; }
+        .decision-review { background: #fff3e0; color: #e65100; }
+        .decision-reject { background: #fbe9e7; color: #c62828; }
+
+        .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }
+        .metric { text-align: center; padding: 16px; background: #f8f9fa; border-radius: 8px; }
+        .metric-value { font-size: 1.4rem; font-weight: 700; color: #1a73e8; }
+        .metric-label { font-size: 0.8rem; color: #777; margin-top: 4px; }
+
+        .score-bar-container { margin-top: 24px; }
+        .score-bar-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: #999; margin-bottom: 4px; }
+        .score-bar { height: 12px; border-radius: 6px; background: linear-gradient(to right, #c62828, #e65100, #f9a825, #66bb6a, #2e7d32); position: relative; }
+        .score-marker { position: absolute; top: -6px; width: 24px; height: 24px; border-radius: 50%; background: white; border: 3px solid #333; transform: translateX(-50%); box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+
+        .error-msg { color: #c62828; background: #fbe9e7; padding: 12px 16px; border-radius: 8px; margin-top: 16px; display: none; }
+
+        .footer { text-align: center; color: #999; font-size: 0.8rem; padding: 20px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Telco Credit Assessment</h1>
+        <p>Evaluate creditworthiness of telecom applicants in real-time</p>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Applicant Information</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Age</label>
+                    <input type="number" id="age" value="35" min="18" max="100">
+                    <span class="hint">18 - 100 years</span>
+                </div>
+                <div class="form-group">
+                    <label>Monthly Income ($)</label>
+                    <input type="number" id="income" value="5000" min="0" step="100">
+                    <span class="hint">Monthly income in USD</span>
+                </div>
+                <div class="form-group">
+                    <label>Credit History (months)</label>
+                    <input type="number" id="credit_history_months" value="60" min="0" max="600">
+                    <span class="hint">Length of credit history</span>
+                </div>
+                <div class="form-group">
+                    <label>Credit Accounts</label>
+                    <input type="number" id="num_credit_accounts" value="3" min="0" max="50">
+                    <span class="hint">Number of active accounts</span>
+                </div>
+                <div class="form-group">
+                    <label>Debt Ratio</label>
+                    <input type="number" id="debt_ratio" value="0.30" min="0" max="1" step="0.01">
+                    <span class="hint">0.0 (no debt) to 1.0 (maximum)</span>
+                </div>
+                <div class="form-group">
+                    <label>Late Payments</label>
+                    <input type="number" id="num_late_payments" value="1" min="0" max="50">
+                    <span class="hint">Historical late payment count</span>
+                </div>
+            </div>
+            <button class="btn" id="submitBtn" onclick="submitForm()">Evaluate Applicant</button>
+            <div class="error-msg" id="errorMsg"></div>
+        </div>
+
+        <div class="card" id="result">
+            <h2>Assessment Result</h2>
+            <div class="result-header">
+                <div class="score-display" id="scoreValue">---</div>
+                <div class="score-label">Credit Score</div>
+                <div class="decision-badge" id="decisionBadge">---</div>
+            </div>
+
+            <div class="score-bar-container">
+                <div class="score-bar-labels">
+                    <span>300 (High Risk)</span>
+                    <span>550</span>
+                    <span>600</span>
+                    <span>850 (Low Risk)</span>
+                </div>
+                <div class="score-bar">
+                    <div class="score-marker" id="scoreMarker" style="left: 50%"></div>
+                </div>
+            </div>
+
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-value" id="probValue">---</div>
+                    <div class="metric-label">Probability (Good)</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="riskValue">---</div>
+                    <div class="metric-label">Risk Level</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="decisionValue">---</div>
+                    <div class="metric-label">Decision</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">Telco Credit Assessment System v1.0</div>
+
+    <script>
+        // API base URL - change this to your deployed server
+        const API_URL = window.location.origin || 'http://localhost:8000';
+
+        async function submitForm() {
+            const btn = document.getElementById('submitBtn');
+            const errorMsg = document.getElementById('errorMsg');
+            errorMsg.style.display = 'none';
+            btn.disabled = true;
+            btn.textContent = 'Evaluating...';
+
+            const payload = {
+                age: parseInt(document.getElementById('age').value),
+                income: parseFloat(document.getElementById('income').value),
+                credit_history_months: parseInt(document.getElementById('credit_history_months').value),
+                num_credit_accounts: parseInt(document.getElementById('num_credit_accounts').value),
+                debt_ratio: parseFloat(document.getElementById('debt_ratio').value),
+                num_late_payments: parseInt(document.getElementById('num_late_payments').value)
+            };
+
+            try {
+                const response = await fetch(API_URL + '/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || `Server error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayResult(data);
+            } catch (error) {
+                errorMsg.textContent = error.message;
+                errorMsg.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Evaluate Applicant';
+            }
+        }
+
+        function displayResult(data) {
+            document.getElementById('result').style.display = 'block';
+
+            // Score
+            const score = data.credit_score;
+            document.getElementById('scoreValue').textContent = score;
+
+            // Score color
+            const scoreEl = document.getElementById('scoreValue');
+            if (score >= 600) scoreEl.style.color = '#2e7d32';
+            else if (score >= 550) scoreEl.style.color = '#e65100';
+            else scoreEl.style.color = '#c62828';
+
+            // Decision badge
+            const badge = document.getElementById('decisionBadge');
+            badge.textContent = data.decision;
+            badge.className = 'decision-badge';
+            if (data.decision === 'Approve') badge.classList.add('decision-approve');
+            else if (data.decision === 'Review') badge.classList.add('decision-review');
+            else badge.classList.add('decision-reject');
+
+            // Metrics
+            document.getElementById('probValue').textContent = (data.probability_good * 100).toFixed(1) + '%';
+            document.getElementById('riskValue').textContent = data.risk_level;
+            document.getElementById('decisionValue').textContent = data.decision;
+
+            // Score marker position (300-850 range)
+            const pct = ((score - 300) / (850 - 300)) * 100;
+            document.getElementById('scoreMarker').style.left = Math.max(0, Math.min(100, pct)) + '%';
+
+            // Scroll to result
+            document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Allow Enter key to submit
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') submitForm();
+        });
+    </script>
+</body>
+</html>
