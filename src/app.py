@@ -1,8 +1,12 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from mangum import Mangum
+import os
 import sys
+import joblib
+import pandas as pd
+import uvicorn
 
 # Ensure src module is in path to load custom class
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -18,10 +22,10 @@ app = FastAPI(
 # Add CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
-    allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Lambda Handler
@@ -38,7 +42,7 @@ except Exception as e:
     print(f"[Error] Failed to load model: {e}")
     model = None
 
-# Define Input Schema
+# Define Input Schema with validation
 class ApplicantData(BaseModel):
     age: int
     income: float
@@ -46,6 +50,48 @@ class ApplicantData(BaseModel):
     num_credit_accounts: int
     debt_ratio: float
     num_late_payments: int
+
+    @field_validator('age')
+    @classmethod
+    def validate_age(cls, v):
+        if v < 18 or v > 100:
+            raise ValueError('Age must be between 18 and 100')
+        return v
+
+    @field_validator('income')
+    @classmethod
+    def validate_income(cls, v):
+        if v < 0:
+            raise ValueError('Income must be non-negative')
+        return v
+
+    @field_validator('credit_history_months')
+    @classmethod
+    def validate_credit_history(cls, v):
+        if v < 0:
+            raise ValueError('Credit history months must be non-negative')
+        return v
+
+    @field_validator('num_credit_accounts')
+    @classmethod
+    def validate_credit_accounts(cls, v):
+        if v < 0:
+            raise ValueError('Number of credit accounts must be non-negative')
+        return v
+
+    @field_validator('debt_ratio')
+    @classmethod
+    def validate_debt_ratio(cls, v):
+        if v < 0 or v > 1:
+            raise ValueError('Debt ratio must be between 0 and 1')
+        return v
+
+    @field_validator('num_late_payments')
+    @classmethod
+    def validate_late_payments(cls, v):
+        if v < 0:
+            raise ValueError('Number of late payments must be non-negative')
+        return v
 
 # Define Decision Logic
 def get_decision(score):
@@ -71,7 +117,7 @@ def health():
 def predict_credit_score(data: ApplicantData):
     if not model:
         raise HTTPException(status_code=503, detail="Model service unavailable")
-    
+
     # Prepare input dataframe
     try:
         input_dict = data.model_dump()
@@ -79,20 +125,20 @@ def predict_credit_score(data: ApplicantData):
         input_dict = data.dict()
 
     input_data = pd.DataFrame([input_dict])
-    
+
     try:
         # Calculate Score
         score = float(model.predict_score(input_data)[0])
         score = round(score, 1)
-        
+
         # Calculate Probability (of being Good)
         prob_good = float(model.predict_proba(input_data)[0])
-        
+
         # Determine Decision
         decision, risk_level = get_decision(score)
-        
+
         return {
-            "applicant_id": "N/A", 
+            "applicant_id": "N/A",
             "credit_score": score,
             "probability_good": round(prob_good, 4),
             "risk_level": risk_level,

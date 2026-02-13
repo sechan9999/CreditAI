@@ -19,16 +19,17 @@ def predict(input_dict):
         scale = MODEL_PARAMS['scales'][i]
         coef = MODEL_PARAMS['coefs'][i]
         log_odds += ((val - mean) / scale) * coef
-        
+
     prob_good = 1 / (1 + math.exp(-log_odds))
-    
+
     base_score = 600
     pdo = 20
-    base_odds = 50
+    base_odds = 5
+    odds = prob_good / (1 - prob_good + 1e-10)
     factor = pdo / math.log(2)
     offset = base_score - factor * math.log(base_odds)
-    
-    score = offset + factor * log_odds
+
+    score = offset + factor * math.log(odds + 1e-10)
     return max(300, min(850, score)), prob_good
 
 def get_decision(score):

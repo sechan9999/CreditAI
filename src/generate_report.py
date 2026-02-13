@@ -2,71 +2,66 @@ import pandas as pd
 import os
 import json
 
-# Load data
-base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-data_path = os.path.join(base_path, 'data', 'raw', 'telecom_data.csv')
-df = pd.read_csv(data_path)
 
-# Prepare Data for Charts
+def generate_report():
+    # Load data
+    base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    data_path = os.path.join(base_path, 'data', 'raw', 'telecom_data.csv')
+    df = pd.read_csv(data_path)
 
-# 1. Status Counts
-status_counts = df['status'].value_counts()
-status_data = {
-    'labels': status_counts.index.tolist(),
-    'data': status_counts.values.tolist()
-}
+    # Prepare Data for Charts
 
-# 2. Target Counts (Approved Only)
-approved = df[df['status'] == 'approved']
-target_counts = approved['target'].value_counts().sort_index()
-target_data = {
-    'labels': ['Bad (0)', 'Good (1)'], # assuming 0 and 1
-    'data': [int(target_counts.get(0, 0)), int(target_counts.get(1, 0))]
-}
-
-# 3. Histogram Data Helper
-def get_hist_data(series, bins=20):
-    counts, bin_edges = pd.cut(series, bins=bins, retbins=True).value_counts().sort_index(), pd.cut(series, bins=bins, retbins=True)[1]
-    # Format bin labels
-    labels = [f"{int(bin_edges[i])}-{int(bin_edges[i+1])}" for i in range(len(bin_edges)-1)]
-    return labels, counts.values.tolist()
-
-rejected = df[df['status'] == 'rejected']
-
-# Collect histogram data for key features
-features = ['income', 'credit_history_months', 'debt_ratio', 'num_late_payments']
-feature_charts = {}
-
-for feat in features:
-    # Determine common bins range
-    min_val = min(df[feat].min(), 0)
-    max_val = df[feat].max()
-    # Create approx 15 bins
-    step = (max_val - min_val) / 15
-    bins = [min_val + i*step for i in range(16)]
-    
-    # Approved hist
-    a_counts = pd.cut(approved[feat], bins=bins).value_counts().sort_index()
-    # Rejected hist
-    r_counts = pd.cut(rejected[feat], bins=bins).value_counts().sort_index()
-    
-    labels = [f"{int(bins[i])}" for i in range(len(bins)-1)]
-    
-    feature_charts[feat] = {
-        'labels': labels,
-        'approved': a_counts.values.tolist(),
-        'rejected': r_counts.values.tolist()
+    # 1. Status Counts
+    status_counts = df['status'].value_counts()
+    status_data = {
+        'labels': status_counts.index.tolist(),
+        'data': status_counts.values.tolist()
     }
 
-# Convert to JSON for JS injection
-charts_json = json.dumps({
-    'status': status_data,
-    'target': target_data,
-    'features': feature_charts
-})
+    # 2. Target Counts (Approved Only)
+    approved = df[df['status'] == 'approved']
+    target_counts = approved['target'].value_counts().sort_index()
+    target_data = {
+        'labels': ['Bad (0)', 'Good (1)'],
+        'data': [int(target_counts.get(0, 0)), int(target_counts.get(1, 0))]
+    }
 
-# Generate HTML with Chart.js
-html_content = f"""
+    rejected = df[df['status'] == 'rejected']
+
+    # Collect histogram data for key features
+    features = ['income', 'credit_history_months', 'debt_ratio', 'num_late_payments']
+    feature_charts = {}
+
+    for feat in features:
+        # Determine common bins range
+        min_val = min(df[feat].min(), 0)
+        max_val = df[feat].max()
+        # Create approx 15 bins
+        step = (max_val - min_val) / 15
+        bins = [min_val + i*step for i in range(16)]
+
+        # Approved hist
+        a_counts = pd.cut(approved[feat], bins=bins).value_counts().sort_index()
+        # Rejected hist
+        r_counts = pd.cut(rejected[feat], bins=bins).value_counts().sort_index()
+
+        labels = [f"{int(bins[i])}" for i in range(len(bins)-1)]
+
+        feature_charts[feat] = {
+            'labels': labels,
+            'approved': a_counts.values.tolist(),
+            'rejected': r_counts.values.tolist()
+        }
+
+    # Convert to JSON for JS injection
+    charts_json = json.dumps({
+        'status': status_data,
+        'target': target_data,
+        'features': feature_charts
+    })
+
+    # Generate HTML with Chart.js
+    html_content = f"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -88,8 +83,8 @@ html_content = f"""
     </style>
 </head>
 <body>
-    <h1>📱 Telco Credit Data Analysis Report</h1>
-    
+    <h1>Telco Credit Data Analysis Report</h1>
+
     <div class="dashboard-grid">
         <div class="card full-width">
             <div class="stats-container">
@@ -218,8 +213,13 @@ html_content = f"""
 </html>
 """
 
-report_path = os.path.join(base_path, 'reports', 'data_analysis.html')
-with open(report_path, 'w', encoding='utf-8') as f:
-    f.write(html_content)
+    report_path = os.path.join(base_path, 'reports', 'data_analysis.html')
+    os.makedirs(os.path.dirname(report_path), exist_ok=True)
+    with open(report_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
 
-print(f"Report generated at: {report_path}")
+    print(f"Report generated at: {report_path}")
+
+
+if __name__ == "__main__":
+    generate_report()

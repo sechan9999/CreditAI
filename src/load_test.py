@@ -33,36 +33,40 @@ def send_request(request_id):
         }
     except Exception as e:
         return {
-            "id": request_id, 
-            "status": "Fail", 
-            "latency": 0, 
+            "id": request_id,
+            "status": "Fail",
+            "latency": 0,
             "decision": str(e)
         }
 
-print(f"🚀 Starting Load Test: {NUM_REQUESTS} requests with {CONCURRENT_USERS} concurrent users...")
-start_test = time.time()
+def run_load_test():
+    print(f"Starting Load Test: {NUM_REQUESTS} requests with {CONCURRENT_USERS} concurrent users...")
+    start_test = time.time()
 
-results = []
-with concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENT_USERS) as executor:
-    futures = [executor.submit(send_request, i) for i in range(NUM_REQUESTS)]
-    for future in concurrent.futures.as_completed(futures):
-        results.append(future.result())
+    results = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENT_USERS) as executor:
+        futures = [executor.submit(send_request, i) for i in range(NUM_REQUESTS)]
+        for future in concurrent.futures.as_completed(futures):
+            results.append(future.result())
 
-total_time = time.time() - start_test
-df_res = pd.DataFrame(results)
+    total_time = time.time() - start_test
+    df_res = pd.DataFrame(results)
 
-print("\n" + "=" * 60)
-print("📊 LOAD TEST RESULTS")
-print("=" * 60)
-print(f"Total Requests: {NUM_REQUESTS}")
-print(f"Total Time: {total_time:.2f} sec")
-print(f"Throughput: {NUM_REQUESTS / total_time:.1f} req/sec")
-print(f"Success Rate: {(df_res['status'] == 200).mean() * 100:.1f}%")
-print("-" * 60)
-print(f"Average Latency: {df_res['latency'].mean():.2f} ms")
-print(f"P95 Latency: {df_res['latency'].quantile(0.95):.2f} ms")
-print(f"P99 Latency: {df_res['latency'].quantile(0.99):.2f} ms")
-print("-" * 60)
-print("Decisions Distribution:")
-print(df_res['decision'].value_counts().to_string())
-print("=" * 60)
+    print("\n" + "=" * 60)
+    print("LOAD TEST RESULTS")
+    print("=" * 60)
+    print(f"Total Requests: {NUM_REQUESTS}")
+    print(f"Total Time: {total_time:.2f} sec")
+    print(f"Throughput: {NUM_REQUESTS / total_time:.1f} req/sec")
+    print(f"Success Rate: {(df_res['status'] == 200).mean() * 100:.1f}%")
+    print("-" * 60)
+    print(f"Average Latency: {df_res['latency'].mean():.2f} ms")
+    print(f"P95 Latency: {df_res['latency'].quantile(0.95):.2f} ms")
+    print(f"P99 Latency: {df_res['latency'].quantile(0.99):.2f} ms")
+    print("-" * 60)
+    print("Decisions Distribution:")
+    print(df_res['decision'].value_counts().to_string())
+    print("=" * 60)
+
+if __name__ == "__main__":
+    run_load_test()
