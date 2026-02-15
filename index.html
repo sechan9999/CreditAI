@@ -4,21 +4,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telco Credit Assessment System</title>
+    <title>CreditAI - AI-Powered Credit Scoring</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --accent: #8b5cf6;
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
-            --bg: #f3f4f6;
-            --card-bg: #ffffff;
-            --text-main: #1f2937;
-            --text-light: #6b7280;
+            --bg: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #0f172a;
+            --text-main: #f1f5f9;
+            --text-light: #94a3b8;
+            --text-muted: #64748b;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(255, 255, 255, 0.15);
+            --glow: rgba(59, 130, 246, 0.15);
         }
 
         * {
@@ -31,73 +37,131 @@
             font-family: 'Inter', sans-serif;
             background: var(--bg);
             color: var(--text-main);
-            line-height: 1.5;
+            line-height: 1.6;
         }
 
         /* Header */
         header {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            padding: 2rem 0;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #1e1b4b 100%);
+            padding: 2.5rem 0 2rem;
             text-align: center;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--border);
         }
 
-        header h1 {
-            font-size: 2.25rem;
-            font-weight: 700;
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 30% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+                        radial-gradient(ellipse at 70% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+            animation: headerGlow 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes headerGlow {
+            0% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
             margin-bottom: 0.5rem;
         }
 
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 24px rgba(59, 130, 246, 0.3);
+        }
+
+        .logo-icon svg {
+            width: 28px;
+            height: 28px;
+            color: white;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 0%, #93c5fd 50%, #c4b5fd 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
         header p {
-            opacity: 0.9;
-            font-weight: 300;
+            color: var(--text-light);
+            font-weight: 400;
+            font-size: 1rem;
+            margin-top: 0.25rem;
         }
 
         /* Navigation */
         .nav-container {
             display: flex;
             justify-content: center;
-            background: white;
-            padding: 1rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            background: var(--bg-card);
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
             position: sticky;
             top: 0;
             z-index: 100;
+            gap: 0.5rem;
+            backdrop-filter: blur(12px);
         }
 
         .nav-btn {
-            background: none;
+            background: transparent;
             border: none;
-            padding: 0.5rem 1.5rem;
-            font-size: 1rem;
-            font-weight: 600;
+            padding: 0.6rem 1.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
             color: var(--text-light);
             cursor: pointer;
-            transition: all 0.2s;
-            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+            border-radius: 8px;
+            font-family: inherit;
         }
 
         .nav-btn:hover {
-            color: var(--primary);
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .nav-btn.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
+            color: white;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            box-shadow: 0 0 16px rgba(59, 130, 246, 0.3);
         }
 
         /* Main Container */
         .container {
             max-width: 1200px;
             margin: 2rem auto;
-            padding: 0 1rem;
+            padding: 0 1.5rem;
         }
 
         /* Sections */
         .section {
             display: none;
-            animation: fadeIn 0.3s ease-in-out;
+            animation: fadeIn 0.4s ease-out;
         }
 
         .section.active {
@@ -105,68 +169,73 @@
         }
 
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         /* Card Styles */
         .card {
-            background: var(--card-bg);
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border);
             padding: 2rem;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            border-color: var(--border-hover);
+            box-shadow: 0 0 32px rgba(59, 130, 246, 0.05);
         }
 
         .card h2 {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             color: var(--text-main);
             margin-bottom: 1.5rem;
             padding-bottom: 0.75rem;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid var(--border);
+            font-weight: 700;
         }
 
         /* Form Grid */
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 1.5rem;
         }
 
         .form-group label {
             display: block;
             font-weight: 600;
-            font-size: 0.875rem;
-            color: var(--text-main);
+            font-size: 0.8rem;
+            color: var(--text-light);
             margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .form-group input {
             width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.5rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            padding: 0.75rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-main);
             font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
 
         .form-group input:focus {
             border-color: var(--primary);
             outline: none;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
 
         .hint {
-            font-size: 0.75rem;
-            color: var(--text-light);
-            margin-top: 0.25rem;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 0.35rem;
             display: block;
         }
 
@@ -174,26 +243,30 @@
         .btn-primary {
             width: 100%;
             padding: 1rem;
-            background: var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--accent));
             color: white;
             border: none;
-            border-radius: 0.75rem;
-            font-size: 1.125rem;
-            font-weight: 600;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.3s;
             margin-top: 2rem;
+            font-family: inherit;
+            letter-spacing: 0.02em;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
         }
 
         .btn-primary:hover {
-            background: var(--primary-dark);
+            box-shadow: 0 4px 24px rgba(59, 130, 246, 0.5);
+            transform: translateY(-1px);
         }
 
         /* Results Area */
         #resultArea {
             display: none;
             margin-top: 2rem;
-            border-top: 2px dashed #e5e7eb;
+            border-top: 1px solid var(--border);
             padding-top: 2rem;
         }
 
@@ -206,17 +279,19 @@
             font-size: 5rem;
             font-weight: 800;
             line-height: 1;
-            background: -webkit-linear-gradient(45deg, var(--primary), var(--primary-dark));
+            background: linear-gradient(135deg, var(--primary), var(--accent));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .score-label {
-            font-size: 1rem;
+            font-size: 0.875rem;
             font-weight: 600;
-            color: var(--text-light);
+            color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.1em;
+            margin-top: 0.5rem;
         }
 
         .decision-badge {
@@ -226,36 +301,27 @@
             padding: 0.5rem 1.5rem;
             border-radius: 9999px;
             font-weight: 700;
-            font-size: 1.25rem;
+            font-size: 1.125rem;
             margin-top: 1rem;
+            letter-spacing: 0.05em;
         }
 
-        .bg-success {
-            background-color: #d1fae5;
-            color: #065f46;
-        }
-
-        .bg-warning {
-            background-color: #fef3c7;
-            color: #92400e;
-        }
-
-        .bg-danger {
-            background-color: #fee2e2;
-            color: #991b1b;
-        }
+        .bg-success { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .bg-warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .bg-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
 
         .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 1rem;
             text-align: center;
         }
 
         .metric-box {
-            background: #f9fafb;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
             padding: 1.5rem;
-            border-radius: 0.75rem;
+            border-radius: 12px;
         }
 
         .metric-value {
@@ -265,8 +331,8 @@
         }
 
         .metric-label {
-            font-size: 0.875rem;
-            color: var(--text-light);
+            font-size: 0.8rem;
+            color: var(--text-muted);
             margin-top: 0.25rem;
         }
 
@@ -283,39 +349,43 @@
             width: 100%;
         }
 
-        .full-width {
-            grid-column: 1 / -1;
-        }
+        .full-width { grid-column: 1 / -1; }
 
         .kpi-row {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
             gap: 1rem;
+            margin-bottom: 2rem;
         }
 
         .kpi-card {
-            background: white;
+            background: var(--bg-card);
             padding: 1.5rem;
-            border-radius: 0.75rem;
+            border-radius: 12px;
             text-align: center;
-            flex: 1;
-            min-width: 150px;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--border);
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .kpi-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: 0 0 24px var(--glow);
         }
 
         .kpi-value {
             font-size: 2rem;
             font-weight: 800;
-            color: var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .kpi-label {
-            color: var(--text-light);
-            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
             font-weight: 500;
+            margin-top: 0.25rem;
         }
 
         /* PIPELINE STYLES */
@@ -328,7 +398,7 @@
             position: relative;
             padding-left: 2.5rem;
             padding-bottom: 2rem;
-            border-left: 2px solid #e5e7eb;
+            border-left: 2px solid var(--border);
         }
 
         .pipeline-step:last-child {
@@ -342,8 +412,8 @@
             width: 2rem;
             height: 2rem;
             border-radius: 50%;
-            background: white;
-            border: 2px solid #e5e7eb;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -353,29 +423,32 @@
         .step-icon.pass {
             border-color: var(--success);
             color: var(--success);
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
         }
 
         .step-icon.warning {
             border-color: var(--warning);
             color: var(--warning);
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
         }
 
         .step-icon.fail {
             border-color: var(--danger);
             color: var(--danger);
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
         }
 
         .step-card {
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.75rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
             padding: 1.25rem;
-            transition: all 0.2s;
+            transition: all 0.3s;
         }
 
         .step-card:hover {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            border-color: var(--primary);
+            box-shadow: 0 0 24px var(--glow);
+            border-color: var(--border-hover);
         }
 
         .step-header {
@@ -388,102 +461,106 @@
         .step-title {
             font-weight: 700;
             color: var(--text-main);
-            font-size: 1rem;
+            font-size: 0.95rem;
         }
 
         .step-badge {
-            font-size: 0.7rem;
-            padding: 0.25rem 0.5rem;
+            font-size: 0.65rem;
+            padding: 0.25rem 0.6rem;
             border-radius: 999px;
             text-transform: uppercase;
             font-weight: 700;
+            letter-spacing: 0.05em;
         }
 
-        .badge-pass {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .badge-warning {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .badge-fail {
-            background: #fee2e2;
-            color: #991b1b;
-        }
+        .badge-pass { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .badge-warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        .badge-fail { background: rgba(239, 68, 68, 0.15); color: #f87171; }
 
         .step-details {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 1rem;
-            background: #f9fafb;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
             padding: 0.75rem;
-            border-radius: 0.5rem;
+            border-radius: 8px;
         }
 
-        .detail-item {
-            display: flex;
-            flex-direction: column;
-        }
+        .detail-item { display: flex; flex-direction: column; }
 
         .detail-label {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             text-transform: uppercase;
-            color: var(--text-light);
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
         }
 
         .detail-value {
-            font-family: monospace;
+            font-family: 'Inter', monospace;
             font-size: 0.9rem;
             color: var(--text-main);
             font-weight: 600;
         }
 
-        @media (max-width: 768px) {
-
-            .chart-grid,
-            .metrics-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
         /* Gauge Bar */
         .gauge-container {
             position: relative;
-            height: 1.5rem;
-            background: #e5e7eb;
+            height: 1.25rem;
+            background: rgba(255, 255, 255, 0.05);
             border-radius: 1rem;
             margin: 2rem 0;
             overflow: hidden;
+            border: 1px solid var(--border);
         }
 
         .gauge-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--danger) 0%, var(--warning) 50%, var(--success) 100%);
+            background: linear-gradient(90deg, var(--danger) 0%, var(--warning) 45%, var(--success) 70%, var(--primary) 100%);
             width: 100%;
+            opacity: 0.8;
         }
 
         .gauge-marker {
             position: absolute;
-            top: -0.25rem;
+            top: -3px;
             width: 4px;
-            height: 2rem;
+            height: calc(100% + 6px);
             background: white;
-            border: 2px solid #333;
+            border-radius: 2px;
             z-index: 10;
             transform: translateX(-50%);
             transition: left 1s ease-out;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
         }
 
         .gauge-labels {
             display: flex;
             justify-content: space-between;
-            font-size: 0.75rem;
-            color: var(--text-light);
+            font-size: 0.7rem;
+            color: var(--text-muted);
             margin-top: 0.5rem;
-            font-weight: 600;
+            font-weight: 500;
+        }
+
+        /* About section */
+        .about-content p { color: var(--text-light); margin-bottom: 1rem; line-height: 1.8; }
+        .about-content h3 { color: var(--text-main); margin-bottom: 0.75rem; font-size: 1.1rem; }
+        .about-content ul { margin-left: 1.5rem; margin-bottom: 1.5rem; color: var(--text-light); }
+        .about-content li { margin-bottom: 0.5rem; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-light); }
+
+        @media (max-width: 768px) {
+            .chart-grid, .metrics-grid { grid-template-columns: 1fr; }
+            .kpi-row { grid-template-columns: repeat(2, 1fr); }
+            header h1 { font-size: 1.75rem; }
+            .nav-container { flex-wrap: wrap; }
+            .nav-btn { font-size: 0.75rem; padding: 0.5rem 0.75rem; }
         }
     </style>
 </head>
@@ -491,15 +568,24 @@
 <body>
 
     <header>
-        <h1>Telco Credit Assessment System</h1>
-        <p>AI-Powered Credit Scoring & Risk analysis</p>
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                </div>
+                <h1>CreditAI</h1>
+            </div>
+            <p>AI-Powered Credit Scoring & Risk Analysis</p>
+        </div>
     </header>
 
     <nav class="nav-container">
-        <button class="nav-btn active" onclick="switchTab('app')">🚀 Credit Scoring App</button>
-        <button class="nav-btn" onclick="switchTab('pipeline')">⚙️ AI Pipeline</button>
-        <button class="nav-btn" onclick="switchTab('analysis')">📊 Data Analysis Report</button>
-        <button class="nav-btn" onclick="switchTab('about')">ℹ️ About Project</button>
+        <button class="nav-btn active" onclick="switchTab('app')">Credit Scoring</button>
+        <button class="nav-btn" onclick="switchTab('pipeline')">AI Pipeline</button>
+        <button class="nav-btn" onclick="switchTab('analysis')">Data Analysis</button>
+        <button class="nav-btn" onclick="switchTab('about')">About</button>
     </nav>
 
     <div class="container">
@@ -525,7 +611,7 @@
                         <span class="hint">Length of active credit history</span>
                     </div>
                     <div class="form-group">
-                        <label>Number of Open Credit Accounts</label>
+                        <label>Open Credit Accounts</label>
                         <input type="number" id="num_credit_accounts" value="3" min="0" max="50">
                         <span class="hint">Valid credit lines (cards, loans)</span>
                     </div>
@@ -579,16 +665,14 @@
         <div id="pipeline" class="section">
             <div class="pipeline-container">
                 <div style="margin-bottom: 2rem; text-align: center;">
-                    <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">AI Agent Analysis Pipeline</h2>
-                    <p style="color: var(--text-light);">Real-time execution logs of the Multi-Agent System</p>
+                    <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text-main);">AI Agent Analysis Pipeline</h2>
+                    <p style="color: var(--text-muted);">Real-time execution logs of the Multi-Agent System</p>
                 </div>
 
                 <div id="pipelineSteps">
-                    <!-- Steps will be injected here via JS -->
-                    <div class="card" style="text-align: center; color: var(--text-light);">
-                        <i data-lucide="play-circle" style="width: 48px; height: 48px; opacity: 0.5;"></i>
-                        <p style="margin-top: 1rem;">Run the <strong>Credit Scoring App</strong> analysis to see the
-                            pipeline execution.</p>
+                    <div class="card" style="text-align: center; color: var(--text-muted);">
+                        <i data-lucide="play-circle" style="width: 48px; height: 48px; opacity: 0.4;"></i>
+                        <p style="margin-top: 1rem;">Run the <strong style="color: var(--text-light);">Credit Scoring</strong> analysis to see the pipeline execution.</p>
                     </div>
                 </div>
             </div>
@@ -602,11 +686,11 @@
                     <div class="kpi-label">Total Applicants</div>
                 </div>
                 <div class="kpi-card">
-                    <div class="kpi-value" style="color: var(--success);">5,000</div>
+                    <div class="kpi-value" style="-webkit-text-fill-color: var(--success);">5,000</div>
                     <div class="kpi-label">Approved</div>
                 </div>
                 <div class="kpi-card">
-                    <div class="kpi-value" style="color: var(--danger);">2,000</div>
+                    <div class="kpi-value" style="-webkit-text-fill-color: var(--danger);">2,000</div>
                     <div class="kpi-label">Rejected</div>
                 </div>
                 <div class="kpi-card">
@@ -657,16 +741,16 @@
 
         <!-- ABOUT SECTION -->
         <div id="about" class="section">
-            <div class="card">
-                <h2>About this Project</h2>
-                <p style="margin-bottom: 1rem;">
-                    This project demonstrates an <strong>End-to-End Credit Scoring Pipeline</strong> typically used in
+            <div class="card about-content">
+                <h2>About CreditAI</h2>
+                <p>
+                    CreditAI demonstrates an <strong>End-to-End Credit Scoring Pipeline</strong> typically used in
                     the telecommunications and banking sectors.
                     It relies on a Logistic Regression model trained on synthetic data to predict the likelihood of a
                     customer paying their bills.
                 </p>
-                <h3 style="margin-bottom: 0.5rem; color: var(--text-main);">Methodology</h3>
-                <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem; color: var(--text-light);">
+                <h3>Methodology</h3>
+                <ul>
                     <li><strong>Data Generation:</strong> Created 7,000 synthetic applicant records including
                         demographic and financial history.</li>
                     <li><strong>Training:</strong> Tuned a Logistic Regression model with class balancing and standard
@@ -682,8 +766,13 @@
     </div>
 
     <script>
+        // --- Dark theme Chart.js defaults ---
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.06)';
+        Chart.defaults.plugins.legend.labels.usePointStyle = true;
+        Chart.defaults.plugins.legend.labels.padding = 16;
+
         // --- APP LOGIC ---
-        // Model Coefficients
         const MODEL_COEFS = {
             intercept: -0.0937,
             income: 0.546570,
@@ -700,7 +789,6 @@
         };
 
         function calculateScore() {
-            // 1. Get Inputs
             const inputs = {
                 age: parseFloat(document.getElementById('age').value),
                 income: parseFloat(document.getElementById('income').value),
@@ -710,7 +798,6 @@
                 num_late_payments: parseFloat(document.getElementById('num_late_payments').value)
             };
 
-            // 2. Preprocessing & Calc
             let logOdds = MODEL_COEFS.intercept;
             for (const [key, val] of Object.entries(inputs)) {
                 const scaled = (val - SCALER.mean[key]) / SCALER.scale[key];
@@ -724,10 +811,7 @@
             let score = offset + factor * Math.log(odds);
             score = Math.max(300, Math.min(850, Math.round(score)));
 
-            // 3. Update UI
             displayResult(score, prob);
-
-            // 4. Update Pipeline
             updatePipeline(inputs, score, prob);
         }
 
@@ -735,7 +819,6 @@
             const resultArea = document.getElementById('resultArea');
             resultArea.style.display = 'block';
 
-            // Animate Score
             const scoreEl = document.getElementById('scoreValue');
             let current = 0;
             const interval = setInterval(() => {
@@ -747,11 +830,9 @@
                 scoreEl.textContent = current;
             }, 10);
 
-            // Marker Position
             const pct = ((score - 300) / (850 - 300)) * 100;
             document.getElementById('scoreMarker').style.left = `${Math.max(0, Math.min(100, pct))}%`;
 
-            // Decision Logic
             const badge = document.getElementById('decisionBadge');
             if (score >= 600) {
                 badge.textContent = "APPROVED";
@@ -774,7 +855,6 @@
         function updatePipeline(inputs, score, prob) {
             const stepsContainer = document.getElementById('pipelineSteps');
 
-            // Logic for statuses
             const paymentStatus = inputs.num_late_payments === 0 ? 'pass' : inputs.num_late_payments < 2 ? 'warning' : 'fail';
             const debtStatus = inputs.debt_ratio < 0.4 ? 'pass' : inputs.debt_ratio < 0.6 ? 'warning' : 'fail';
             const complianceStatus = inputs.age >= 18 ? 'pass' : 'fail';
@@ -852,7 +932,7 @@
             });
 
             stepsContainer.innerHTML = html;
-            lucide.createIcons(); // Re-render icons
+            lucide.createIcons();
         }
 
         function switchTab(tabId) {
@@ -866,23 +946,24 @@
         }
 
         // --- CHART LOGIC ---
-        const chartData = { "status": { "labels": ["approved", "rejected"], "data": [5000, 2000] }, "target": { "labels": ["Bad (0)", "Good (1)"], "data": [3105, 1895] }, "features": { "income": { "labels": ["0", "83", "166", "250", "333", "416", "500", "583", "666", "750", "833", "916", "1000", "1083", "1166"], "approved": [0, 1101, 1478, 1038, 618, 360, 188, 85, 63, 25, 18, 11, 9, 1, 5], "rejected": [329, 784, 469, 222, 98, 47, 26, 17, 6, 2, 0, 0, 0, 0, 0] }, "credit_history_months": { "labels": ["0", "16", "32", "48", "64", "80", "96", "112", "128", "144", "160", "176", "192", "208", "224"], "approved": [1852, 1153, 677, 480, 302, 189, 126, 82, 45, 30, 21, 17, 10, 6, 10], "rejected": [911, 476, 259, 140, 74, 39, 21, 9, 0, 0, 0, 0, 0, 0, 0] }, "debt_ratio": { "labels": ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"], "approved": [276, 614, 774, 783, 713, 583, 468, 342, 203, 132, 57, 41, 14, 0, 0], "rejected": [5, 31, 50, 130, 175, 185, 233, 259, 237, 212, 167, 130, 99, 61, 26] }, "num_late_payments": { "labels": ["0", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"], "approved": [0, 1895, 927, 301, 80, 10, 4, 1, 0, 0, 0, 0, 0, 0, 0], "rejected": [0, 318, 422, 470, 338, 187, 109, 47, 13, 4, 0, 0, 0, 0, 1] } } };
+        const chartData = { "status": { "labels": ["Approved", "Rejected"], "data": [5000, 2000] }, "target": { "labels": ["Bad (0)", "Good (1)"], "data": [3105, 1895] }, "features": { "income": { "labels": ["0", "83", "166", "250", "333", "416", "500", "583", "666", "750", "833", "916", "1000", "1083", "1166"], "approved": [0, 1101, 1478, 1038, 618, 360, 188, 85, 63, 25, 18, 11, 9, 1, 5], "rejected": [329, 784, 469, 222, 98, 47, 26, 17, 6, 2, 0, 0, 0, 0, 0] }, "credit_history_months": { "labels": ["0", "16", "32", "48", "64", "80", "96", "112", "128", "144", "160", "176", "192", "208", "224"], "approved": [1852, 1153, 677, 480, 302, 189, 126, 82, 45, 30, 21, 17, 10, 6, 10], "rejected": [911, 476, 259, 140, 74, 39, 21, 9, 0, 0, 0, 0, 0, 0, 0] }, "debt_ratio": { "labels": ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"], "approved": [276, 614, 774, 783, 713, 583, 468, 342, 203, 132, 57, 41, 14, 0, 0], "rejected": [5, 31, 50, 130, 175, 185, 233, 259, 237, 212, 167, 130, 99, 61, 26] }, "num_late_payments": { "labels": ["0", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"], "approved": [0, 1895, 927, 301, 80, 10, 4, 1, 0, 0, 0, 0, 0, 0, 0], "rejected": [0, 318, 422, 470, 338, 187, 109, 47, 13, 4, 0, 0, 0, 0, 1] } } };
 
         const commonOptions = {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom' } }
+            plugins: {
+                legend: { position: 'bottom' }
+            }
         };
 
         window.onload = function () {
             if (window.lucide) lucide.createIcons();
 
-            // Charts
             new Chart(document.getElementById('statusChart'), {
                 type: 'doughnut',
                 data: {
                     labels: chartData.status.labels,
-                    datasets: [{ data: chartData.status.data, backgroundColor: ['#10b981', '#ef4444'] }]
+                    datasets: [{ data: chartData.status.data, backgroundColor: ['#10b981', '#ef4444'], borderWidth: 0 }]
                 },
                 options: commonOptions
             });
@@ -891,7 +972,7 @@
                 type: 'pie',
                 data: {
                     labels: chartData.target.labels,
-                    datasets: [{ data: chartData.target.data, backgroundColor: ['#ef4444', '#10b981'] }]
+                    datasets: [{ data: chartData.target.data, backgroundColor: ['#ef4444', '#10b981'], borderWidth: 0 }]
                 },
                 options: commonOptions
             });
@@ -905,11 +986,17 @@
                         data: {
                             labels: chartData.features[key].labels,
                             datasets: [
-                                { label: 'Approved', data: chartData.features[key].approved, backgroundColor: 'rgba(16, 185, 129, 0.6)' },
-                                { label: 'Rejected', data: chartData.features[key].rejected, backgroundColor: 'rgba(239, 68, 68, 0.6)' }
+                                { label: 'Approved', data: chartData.features[key].approved, backgroundColor: 'rgba(16, 185, 129, 0.7)', borderRadius: 4 },
+                                { label: 'Rejected', data: chartData.features[key].rejected, backgroundColor: 'rgba(239, 68, 68, 0.7)', borderRadius: 4 }
                             ]
                         },
-                        options: { ...commonOptions, scales: { x: { stacked: false }, y: { beginAtZero: true } } }
+                        options: {
+                            ...commonOptions,
+                            scales: {
+                                x: { stacked: false, grid: { color: 'rgba(255,255,255,0.04)' } },
+                                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' } }
+                            }
+                        }
                     });
                 }
             });
