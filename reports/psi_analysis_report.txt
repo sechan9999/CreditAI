@@ -1,0 +1,28 @@
+
+================================================================================
+PSI DIAGNOSTICS
+================================================================================
+
+1) Selection bias -- approved vs. rejected raw feature distributions
+------------------------------------------------------------------------
+              feature      psi         rating
+    num_late_payments 1.415426   Severe shift
+           debt_ratio 1.393152   Severe shift
+               income 0.529782   Severe shift
+  num_credit_accounts 0.433807   Severe shift
+                  age 0.229023 Moderate shift
+credit_history_months 0.142027 Moderate shift
+
+2) Score shift -- each reject-inference method vs. accepts-only baseline
+------------------------------------------------------------------------
+            method      psi         rating
+         parceling 0.438276   Severe shift
+       hard_cutoff 0.133416 Moderate shift
+fuzzy_augmentation 0.096458         Stable
+
+Note: a raw-feature PSI comparing each method's augmented training
+sample to the population is NOT included above. Fuzzy Augmentation and
+Parceling both reuse every rejected applicant's real feature vector, so
+that comparison reads ~0 for both methods by construction and cannot
+discriminate between them. The score-shift PSI above is computed on
+model output instead, which does discriminate.
