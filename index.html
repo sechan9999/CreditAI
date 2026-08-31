@@ -1547,6 +1547,10 @@
                 },
                 options: {
                     ...commonOptions,
+                    // A chart that needs an animation frame to become visible is a
+                    // chart that can render blank -- hidden tab, reduced motion, a
+                    // throttled background page. Draw it synchronously instead.
+                    animation: false,
                     indexAxis: 'y',
                     plugins: {
                         legend: { display: false },
@@ -1577,6 +1581,7 @@
                 },
                 options: {
                     ...commonOptions,
+                    animation: false,
                     plugins: {
                         legend: { display: false },
                         tooltip: {
