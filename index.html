@@ -820,6 +820,7 @@
         <button class="nav-btn active" onclick="switchTab('app', this)">Credit Scoring</button>
         <button class="nav-btn" onclick="switchTab('pipeline', this)">AI Pipeline</button>
         <button class="nav-btn" onclick="switchTab('analysis', this)">Data Analysis</button>
+        <button class="nav-btn" onclick="switchTab('psi', this)">PSI Diagnostics</button>
         <button class="nav-btn" onclick="switchTab('about', this)">About</button>
     </nav>
 
@@ -995,6 +996,170 @@
                         <canvas id="lateChart"></canvas>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- PSI DIAGNOSTICS SECTION -->
+        <div id="psi" class="section">
+            <style>
+                .psi-note {
+                    font-size: 0.8rem;
+                    line-height: 1.6;
+                    color: var(--text-light);
+                }
+                .psi-note strong { color: var(--text-main); }
+                .psi-bands {
+                    display: flex;
+                    gap: 1.25rem;
+                    flex-wrap: wrap;
+                    font-size: 0.75rem;
+                    color: var(--text-light);
+                    margin-top: 0.75rem;
+                }
+                .psi-band { display: flex; align-items: center; gap: 0.4rem; }
+                .psi-swatch {
+                    width: 10px; height: 10px; border-radius: 2px; display: inline-block;
+                }
+                .psi-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+                .psi-table th, .psi-table td {
+                    text-align: left; padding: 0.5rem 0.75rem;
+                    border-bottom: 1px solid var(--border);
+                }
+                .psi-table th { color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+                .psi-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+                .psi-provenance {
+                    font-size: 0.72rem; color: var(--text-muted);
+                    border-left: 2px solid var(--border-hover);
+                    padding-left: 0.85rem; margin-top: 1.25rem; line-height: 1.6;
+                }
+            </style>
+
+            <div class="card">
+                <h2>Population Stability Index</h2>
+                <p class="psi-note">
+                    PSI measures how far one distribution has moved from another. It is normally used to
+                    detect drift over time; here it is pointed at the problem this model actually has.
+                    <strong>The applicants this lender declined were never observed repaying</strong>, so
+                    the training data is the population the incumbent policy already selected. PSI turns
+                    "the rejects are a different population" from an assertion into a number.
+                </p>
+                <div class="psi-bands">
+                    <span class="psi-band"><span class="psi-swatch" style="background:#10b981"></span> &lt; 0.10 stable</span>
+                    <span class="psi-band"><span class="psi-swatch" style="background:#f59e0b"></span> 0.10 &ndash; 0.25 moderate shift</span>
+                    <span class="psi-band"><span class="psi-swatch" style="background:#ef4444"></span> &ge; 0.25 severe shift</span>
+                </div>
+            </div>
+
+            <div class="kpi-row">
+                <div class="kpi-card">
+                    <div class="kpi-value" style="-webkit-text-fill-color: var(--danger);">1.42</div>
+                    <div class="kpi-label">Worst feature (late payments)</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value" style="-webkit-text-fill-color: var(--danger);">4 / 6</div>
+                    <div class="kpi-label">Features in severe band</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value" style="-webkit-text-fill-color: var(--warning);">0.44</div>
+                    <div class="kpi-label">Largest score shift (parceling)</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">7,000</div>
+                    <div class="kpi-label">Applicants scored</div>
+                </div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="card full-width">
+                    <h2>Selection bias &mdash; approved vs. declined, by feature</h2>
+                    <p class="psi-note">
+                        How different the declined applicants are from the approved ones, feature by
+                        feature. Late payments and debt ratio are the features the incumbent policy is
+                        most strongly selecting on &mdash; which is also where a model trained only on
+                        approvals is least able to extrapolate.
+                    </p>
+                    <div class="chart-container">
+                        <canvas id="psiBiasChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card full-width">
+                    <h2>Score shift &mdash; by reject-inference method</h2>
+                    <p class="psi-note">
+                        Each method assigns outcomes to the declined applicants, a model is retrained on
+                        the result, and the whole population is rescored. This compares those scores
+                        against the accepts-only baseline &mdash; it measures how much each method
+                        actually changes the model's behaviour.
+                    </p>
+                    <div class="chart-container">
+                        <canvas id="psiShiftChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>What the two panels say together</h2>
+                <p class="psi-note">
+                    Read alongside the KS separation from the reject-inference comparison, the ordering is
+                    the interesting part.
+                </p>
+                <table class="psi-table">
+                    <thead>
+                        <tr><th>Method</th><th class="num">Declined labelled bad</th><th class="num">KS</th><th class="num">Score shift</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Hard cutoff</td><td class="num">98.5%</td><td class="num">51.6% (best)</td><td class="num">0.13</td></tr>
+                        <tr><td>Fuzzy augmentation</td><td class="num">91.7%</td><td class="num">&ndash;</td><td class="num">0.10</td></tr>
+                        <tr><td>Parceling</td><td class="num">87.1%</td><td class="num">&ndash;</td><td class="num">0.44</td></tr>
+                    </tbody>
+                </table>
+                <p class="psi-note" style="margin-top:1.25rem;">
+                    <strong>Hard cutoff scores best on KS while moving the model least.</strong> It labels
+                    almost every declined applicant bad, which largely restates what the incumbent policy
+                    already believed &mdash; so KS rewards it for agreeing with the assumption being
+                    tested, and the coefficients barely move. Parceling labels fewer declines as bad and
+                    shifts the model the most.
+                </p>
+                <p class="psi-note" style="margin-top:0.75rem;">
+                    Two independent diagnostics therefore point the same way: the method that wins on
+                    separation is the one that confirms, and the method that changes the model is the one
+                    that scored lower. <strong>Selecting a reject-inference method by a metric computed on
+                    labels that method invented is circular</strong>, and the score shift is what exposes
+                    it.
+                </p>
+                <p class="psi-note" style="margin-top:0.75rem;">
+                    Still open: whether parceling shifts the model because its random draw adds label
+                    noise, or because it assigns roughly 13% of declines as <em>good</em> and those
+                    applicants have features the baseline model reads as bad &mdash; contradictory
+                    examples that force the coefficients to move. Holding the 87/13 rate fixed while
+                    making the assignment deterministic would separate the two.
+                </p>
+            </div>
+
+            <div class="card">
+                <h2>Cross-check, computed in your browser</h2>
+                <p class="psi-note">
+                    The figures above come from <code>src/psi_analysis.py</code>, which bins on
+                    <strong>deciles of the approved distribution</strong>. The panel below recomputes PSI
+                    live from the histograms already on this page, which use
+                    <strong>equal-width bins</strong>. Same data, same formula, different binning.
+                </p>
+                <div id="psiCrossCheck"></div>
+                <p class="psi-note" style="margin-top:1rem;">
+                    <strong>The numbers do not match, and that is the point.</strong> PSI is not a property
+                    of two distributions alone &mdash; it is a property of two distributions and a choice of
+                    bins. A dashboard that reports a single PSI without saying how it binned is hiding a
+                    parameter that moves the answer. The direction and the ordering survive the change;
+                    the magnitudes do not.
+                </p>
+            </div>
+
+            <div class="psi-provenance">
+                Headline figures produced by <code>src/psi_analysis.py</code> on the 7,000-row synthetic
+                dataset in <code>data/raw/telecom_data.csv</code> (5,000 approved, 2,000 declined).
+                Parceling is seeded, so the pipeline is deterministic &mdash; re-running reproduces
+                <code>reports/psi_analysis_report.txt</code> exactly. These are properties of a
+                simulation, not business outcomes.
             </div>
         </div>
 
@@ -1195,6 +1360,10 @@
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
 
+            // Chart.js sizes to its container, and a hidden .section has no size,
+            // so the PSI charts are built the first time the tab is actually shown.
+            if (tabId === 'psi') buildPsiCharts();
+
             if (window.lucide) lucide.createIcons();
         }
 
@@ -1255,6 +1424,175 @@
             });
 
             switchTab('app', document.querySelector('.nav-btn'));
+        }
+
+        // --- PSI DIAGNOSTICS ---
+        // Headline figures are the output of src/psi_analysis.py on the shipped
+        // synthetic dataset. That pipeline is seeded, so these reproduce exactly.
+        const psiData = {
+            bias: [
+                { feature: 'num_late_payments', psi: 1.415426 },
+                { feature: 'debt_ratio', psi: 1.393152 },
+                { feature: 'income', psi: 0.529782 },
+                { feature: 'num_credit_accounts', psi: 0.433807 },
+                { feature: 'age', psi: 0.229023 },
+                { feature: 'credit_history_months', psi: 0.142027 }
+            ],
+            shift: [
+                { method: 'Parceling', psi: 0.438276 },
+                { method: 'Hard cutoff', psi: 0.133416 },
+                { method: 'Fuzzy augmentation', psi: 0.096458 }
+            ]
+        };
+
+        function psiBandColor(psi) {
+            if (psi < 0.10) return '#10b981';
+            if (psi < 0.25) return '#f59e0b';
+            return '#ef4444';
+        }
+
+        function psiBandLabel(psi) {
+            if (psi < 0.10) return 'Stable';
+            if (psi < 0.25) return 'Moderate shift';
+            return 'Severe shift';
+        }
+
+        // Same formula as calculate_psi() in src/psi_analysis.py, applied to bin
+        // counts rather than raw values: sum((a - e) * ln(a / e)) over bins, with
+        // empty bins floored so the log stays defined.
+        function psiFromCounts(expectedCounts, actualCounts) {
+            const eTot = expectedCounts.reduce((a, b) => a + b, 0);
+            const aTot = actualCounts.reduce((a, b) => a + b, 0);
+            if (!eTot || !aTot || expectedCounts.length !== actualCounts.length) return null;
+            const eps = 1e-4;
+            let psi = 0;
+            for (let i = 0; i < expectedCounts.length; i++) {
+                let e = expectedCounts[i] / eTot;
+                let a = actualCounts[i] / aTot;
+                if (e === 0) e = eps;
+                if (a === 0) a = eps;
+                psi += (a - e) * Math.log(a / e);
+            }
+            return psi;
+        }
+
+        function renderPsiCrossCheck() {
+            const host = document.getElementById('psiCrossCheck');
+            if (!host) return;
+
+            const pythonByFeature = {};
+            psiData.bias.forEach(r => { pythonByFeature[r.feature] = r.psi; });
+
+            const rows = Object.keys(chartData.features).map(key => {
+                const f = chartData.features[key];
+                const live = psiFromCounts(f.approved, f.rejected);
+                return { feature: key, live: live, python: pythonByFeature[key] };
+            }).filter(r => r.live !== null);
+
+            if (!rows.length) {
+                host.innerHTML = '<p class="psi-note">No feature histograms available on this page to recompute from.</p>';
+                return;
+            }
+
+            rows.sort((a, b) => b.live - a.live);
+
+            let html = '<table class="psi-table"><thead><tr>'
+                + '<th>Feature</th>'
+                + '<th class="num">Equal-width bins (live)</th>'
+                + '<th class="num">Decile bins (Python)</th>'
+                + '<th>Band agrees?</th>'
+                + '</tr></thead><tbody>';
+
+            rows.forEach(r => {
+                const pyCell = (r.python === undefined) ? '&ndash;' : r.python.toFixed(3);
+                let agree = '&ndash;';
+                if (r.python !== undefined) {
+                    const same = psiBandLabel(r.live) === psiBandLabel(r.python);
+                    agree = same
+                        ? '<span style="color:#10b981">yes, ' + psiBandLabel(r.live).toLowerCase() + '</span>'
+                        : '<span style="color:#f59e0b">no &mdash; ' + psiBandLabel(r.live).toLowerCase()
+                          + ' vs ' + psiBandLabel(r.python).toLowerCase() + '</span>';
+                }
+                html += '<tr><td>' + r.feature + '</td>'
+                     + '<td class="num" style="color:' + psiBandColor(r.live) + '">' + r.live.toFixed(3) + '</td>'
+                     + '<td class="num">' + pyCell + '</td>'
+                     + '<td>' + agree + '</td></tr>';
+            });
+
+            html += '</tbody></table>';
+            html += '<p class="psi-note" style="margin-top:0.85rem;">'
+                 + 'Only ' + rows.length + ' of the 6 features have histograms embedded in this page, '
+                 + 'so <code>age</code> and <code>num_credit_accounts</code> cannot be recomputed here.'
+                 + '</p>';
+            host.innerHTML = html;
+        }
+
+        let psiChartsBuilt = false;
+
+        function buildPsiCharts() {
+            if (psiChartsBuilt) return;
+            psiChartsBuilt = true;
+
+            const bias = psiData.bias;
+            new Chart(document.getElementById('psiBiasChart'), {
+                type: 'bar',
+                data: {
+                    labels: bias.map(r => r.feature),
+                    datasets: [{
+                        label: 'PSI (approved vs. declined)',
+                        data: bias.map(r => r.psi),
+                        backgroundColor: bias.map(r => psiBandColor(r.psi)),
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    ...commonOptions,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ctx.parsed.x.toFixed(3) + '  (' + psiBandLabel(ctx.parsed.x) + ')'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+
+            const shift = psiData.shift;
+            new Chart(document.getElementById('psiShiftChart'), {
+                type: 'bar',
+                data: {
+                    labels: shift.map(r => r.method),
+                    datasets: [{
+                        label: 'PSI (method score vs. baseline score)',
+                        data: shift.map(r => r.psi),
+                        backgroundColor: shift.map(r => psiBandColor(r.psi)),
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    ...commonOptions,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ctx.parsed.y.toFixed(3) + '  (' + psiBandLabel(ctx.parsed.y) + ')'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' } }
+                    }
+                }
+            });
+
+            renderPsiCrossCheck();
         }
 
         // --- OPENAI INTEGRATION ---
