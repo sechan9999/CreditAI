@@ -838,8 +838,8 @@
                     </div>
                     <div class="form-group">
                         <label>Monthly Income ($)</label>
-                        <input type="number" id="income" value="5000" min="0" step="100">
-                        <span class="hint">Total monthly income before tax</span>
+                        <input type="number" id="income" value="5000" min="0" step="100" oninput="updateIncomeHint()">
+                        <span class="hint" id="incomeHint">Total monthly income before tax</span>
                     </div>
                     <div class="form-group">
                         <label>Credit History (Months)</label>
@@ -1204,20 +1204,93 @@
         Chart.defaults.plugins.legend.labels.padding = 16;
 
         // --- APP LOGIC ---
+        // Source of truth: src/model_params.json, written by src/train_scoring_model.py.
+        // The same numbers are hardcoded in lambda_function.py, so this page, the
+        // Lambda endpoint and reports/final_scorecard_policy.txt all agree.
+        //
+        // These previously did not match. The page carried invented scaler statistics
+        // (round numbers -- income mean 4500, age mean 40) and a different set of
+        // coefficients, which scored the same applicant 122 points lower than the
+        // trained model does. A demo that disagrees with its own model is worse than
+        // no demo, so the fix is to use the trained values rather than to retune
+        // anything until the answer looks right.
         const MODEL_COEFS = {
-            intercept: -0.0937,
-            income: 0.546570,
-            credit_history_months: 0.345736,
-            age: 0.299301,
-            num_credit_accounts: 0.140036,
-            debt_ratio: -0.438233,
-            num_late_payments: -0.553042
+            intercept: -0.5984832925687965,
+            age: 0.35040862346963164,
+            income: 0.6578123678635274,
+            credit_history_months: 0.40440611833726114,
+            num_credit_accounts: 0.22966313352192982,
+            debt_ratio: -0.742082716270213,
+            num_late_payments: -0.9984769472049088
         };
 
+        // Training-set means and standard deviations, not chosen values.
         const SCALER = {
-            mean: { age: 40, income: 4500, credit_history_months: 48, num_credit_accounts: 4, debt_ratio: 0.4, num_late_payments: 1 },
-            scale: { age: 12, income: 2000, credit_history_months: 24, num_credit_accounts: 2, debt_ratio: 0.2, num_late_payments: 1.5 }
+            mean: {
+                age: 33.71204081632653,
+                income: 3142.9372472184195,
+                credit_history_months: 32.67306122448979,
+                num_credit_accounts: 2.726530612244898,
+                debt_ratio: 0.3421508740102015,
+                num_late_payments: 1.5673469387755101
+            },
+            scale: {
+                age: 9.775277955146588,
+                income: 1739.7855186869183,
+                credit_history_months: 33.18780893728111,
+                num_credit_accounts: 1.7005131890713896,
+                debt_ratio: 0.19394932709543317,
+                num_late_payments: 1.5314909042621074
+            }
         };
+
+        // Scorecard anchoring, derived rather than hardcoded so the three constants
+        // and the offset cannot drift apart: 600 points sits at 5:1 odds, and every
+        // 20 points doubles the odds.
+        const BASE_SCORE = 600;
+        const PDO = 20;          // points to double the odds
+        const BASE_ODDS = 5;     // odds of being good at BASE_SCORE
+        const SCORE_FACTOR = PDO / Math.LN2;
+        const SCORE_OFFSET = BASE_SCORE - SCORE_FACTOR * Math.log(BASE_ODDS);
+
+        // Income guidance shown under the field. The cut points are the ones a user
+        // asked for; what makes them defensible is where they sit in the training
+        // distribution (mean $3,143, SD $1,740), so they are labelled that way
+        // rather than presented as model thresholds. The model reads income
+        // continuously and has no bands in it.
+        const INCOME_BANDS = [
+            { min: 3000, label: 'Good', tone: 'var(--success)',
+              note: 'around or above the training-set average of about $3,140' },
+            { min: 1000, label: 'OK', tone: 'var(--warning)',
+              note: 'below average, within about 1.2 standard deviations' },
+            { min: 0, label: 'Weak', tone: 'var(--danger)',
+              note: 'more than 1.2 standard deviations below average' }
+        ];
+
+        function incomeBand(value) {
+            if (!isFinite(value)) return null;
+            const band = INCOME_BANDS.find(b => value >= b.min) || INCOME_BANDS[INCOME_BANDS.length - 1];
+            const z = (value - SCALER.mean.income) / SCALER.scale.income;
+            return { ...band, z: z };
+        }
+
+        function updateIncomeHint() {
+            const el = document.getElementById('incomeHint');
+            if (!el) return;
+            const raw = parseFloat(document.getElementById('income').value);
+            if (!isFinite(raw)) {
+                el.innerHTML = 'Total monthly income before tax';
+                el.style.color = 'var(--text-muted)';
+                return;
+            }
+            const b = incomeBand(raw);
+            const sign = b.z >= 0 ? '+' : '';
+            el.innerHTML = '<strong style="color:' + b.tone + '">' + b.label + '</strong>'
+                + ' &mdash; ' + b.note
+                + ' (' + sign + b.z.toFixed(2) + ' SD).'
+                + ' Over $3,000 good, $1,000&ndash;$3,000 OK, under $1,000 weak.';
+            el.style.color = 'var(--text-light)';
+        }
 
         function calculateScore() {
             lastInputs = {
@@ -1236,10 +1309,11 @@
             }
 
             lastProb = 1 / (1 + Math.exp(-logOdds));
-            const factor = 28.8539;
-            const offset = 487.12;
-            const odds = lastProb / (1 - lastProb);
-            lastScore = Math.max(300, Math.min(850, Math.round(offset + factor * Math.log(odds))));
+            // Same guards as predict() in lambda_function.py, so a probability of
+            // exactly 0 or 1 clamps instead of producing NaN.
+            const odds = lastProb / (1 - lastProb + 1e-10);
+            lastScore = Math.max(300, Math.min(850,
+                Math.round(SCORE_OFFSET + SCORE_FACTOR * Math.log(odds + 1e-10))));
 
             displayResult(lastScore, lastProb);
             updatePipeline(lastInputs, lastScore, lastProb);
@@ -1423,6 +1497,7 @@
                 }
             });
 
+            updateIncomeHint();
             switchTab('app', document.querySelector('.nav-btn'));
         }
 
