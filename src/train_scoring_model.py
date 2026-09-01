@@ -42,9 +42,21 @@ class CreditScoringModel:
         # weight it and then calibrate (Platt or isotonic on a holdout) before the
         # points mapping -- do not feed weighted probabilities into an odds-anchored
         # scale.
+        # penalty='l2' was passed explicitly and has been dropped. It was the
+        # default in every scikit-learn this project supports, so passing it
+        # bought nothing -- and from 1.8 it emits a FutureWarning, removed in
+        # 1.10, which would have turned into a hard failure on the next upgrade.
+        #
+        # The documented migration is l1_ratio=0, but that would raise on the
+        # older scikit-learn that requirements.txt still allows (>=1.0), where
+        # l1_ratio was only valid with solver='saga' and penalty='elasticnet'.
+        # Relying on the default is correct on every version.
+        #
+        # Verified behaviour-preserving: fitting with and without the argument
+        # gives bit-identical coefficients and intercept on this data, so no
+        # model artifact or report needed regenerating.
         self.model = LogisticRegression(
-            penalty='l2',           # L2 정규화
-            C=1.0,                  # 정규화 강도
+            C=1.0,                  # 정규화 강도 (L2, the default penalty)
             max_iter=1000,
             random_state=42
         )
