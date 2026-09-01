@@ -107,19 +107,31 @@ class RejectInference:
         np.random.seed(42)  # For reproducibility
         
         output = f"\n{'='*60}\n"
-        output += f"🔹 Parceling Method (bins={n_bins})\n"
+        output += f"🔹 Parceling Method ({n_bins} quantile bins on predicted probability)\n"
         output += f"{'='*60}\n"
         
-        # 승인 고객 점수 계산
+        # Quantile bins on predicted probability -- not equal-width bins on the
+        # displayed 300-850 score, which is what this used to do.
+        #
+        # Two things were wrong with binning on the score. The score is an affine
+        # transform of log-odds with a chosen PDO and anchor, and it is clipped at
+        # 300 and 850, so equal-width bins on it made this method depend on a
+        # cosmetic display choice. Measured directly: the same data and the same
+        # seed assign 261, 281 and 278 rejected applicants to Good under PDO 20/5:1,
+        # PDO 40/1:1 and PDO 75/3:1. Relabelling a score changes no decision, so it
+        # must not change which applicants a reject-inference method calls good.
+        #
+        # And equal-width bins left some bins nearly empty -- 3 approved applicants
+        # in one and 11 in another -- so rejects landing there were assigned from a
+        # bad rate estimated on 3 observations. Quantile bins put roughly equal
+        # counts in each, which is the point of stratifying at all.
         approved_copy = self.approved_df.copy()
-        approved_copy['score'] = self.base_model.predict_score(approved_copy)
-        
-        # 점수 구간 생성
-        score_min = min(approved_copy['score'].min(), self.rejected_df['pred_score'].min())
-        score_max = max(approved_copy['score'].max(), self.rejected_df['pred_score'].max())
-        bins = np.linspace(score_min - 1, score_max + 1, n_bins + 1)
-        
-        approved_copy['score_bin'] = pd.cut(approved_copy['score'], bins=bins, labels=False)
+        approved_copy['pred_prob'] = self.base_model.predict_proba(approved_copy)
+
+        edges = np.unique(np.quantile(approved_copy['pred_prob'], np.linspace(0, 1, n_bins + 1)))
+        edges[0], edges[-1] = -np.inf, np.inf
+
+        approved_copy['score_bin'] = pd.cut(approved_copy['pred_prob'], bins=edges, labels=False)
         
         # 구간별 Bad Rate 계산
         bin_stats = approved_copy.groupby('score_bin').agg({
@@ -128,12 +140,12 @@ class RejectInference:
         bin_stats.columns = ['score_bin', 'count', 'good_rate']
         bin_stats['bad_rate'] = 1 - bin_stats['good_rate']
         
-        output += "\n📊 Score Bin Statistics:\n"
+        output += "\n📊 Probability Bin Statistics (quantile bins):\n"
         output += bin_stats.to_string(index=False) + "\n"
         
         # 거절 고객에 적용
         rejected_copy = self.rejected_df.copy()
-        rejected_copy['score_bin'] = pd.cut(rejected_copy['pred_score'], bins=bins, labels=False)
+        rejected_copy['score_bin'] = pd.cut(rejected_copy['pred_prob'], bins=edges, labels=False)
         
         # 각 구간의 Bad Rate를 확률로 사용하여 Good/Bad 할당
         def assign_target(row):

@@ -5,6 +5,7 @@ import joblib
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
+import scale
 
 class CreditScoringModel:
     """
@@ -45,25 +46,30 @@ class CreditScoringModel:
         X_scaled = self.scaler.transform(X[self.feature_cols])
         return self.model.predict_proba(X_scaled)[:, 1]
     
-    def predict_score(self, X, base_score=600, pdo=20, base_odds=5):
+    def predict_score(self, X, base_score=None, pdo=None, base_odds=None):
+        """Convert probability to a credit score.
+
+            score = offset + factor * ln(odds),   factor = pdo / ln2
+
+        Defaults come from src/scale.py and are defined nowhere else. While this
+        function carried its own defaults (pdo=20, base_odds=5) the web page, the
+        Lambda handler and this module could each use a different scale, and they
+        did: the same applicant scored 122 points lower on the page than the
+        trained model gave. Passing the arguments explicitly still works, which is
+        what you want when comparing two scales deliberately.
         """
-        확률을 신용 점수로 변환
-        
-        Score = base_score + pdo * log(odds) / log(2)
-        
-        Parameters:
-        - base_score: 기준 점수 (일반적으로 600)
-        - pdo: Points to Double Odds (20점 증가 시 odds 2배)
-        - base_odds: 기준 odds (Good:Bad = 50:1)
-        """
+        base_score = scale.BASE_SCORE if base_score is None else base_score
+        pdo = scale.PDO if pdo is None else pdo
+        base_odds = scale.BASE_ODDS if base_odds is None else base_odds
+
         prob = self.predict_proba(X)
         odds = prob / (1 - prob + 1e-10)
-        
+
         factor = pdo / np.log(2)
         offset = base_score - factor * np.log(base_odds)
-        
+
         score = offset + factor * np.log(odds + 1e-10)
-        return np.clip(score, 300, 850)  # 점수 범위 제한
+        return np.clip(score, scale.SCORE_MIN, scale.SCORE_MAX)
     
     def summary(self):
         """모델 요약"""

@@ -1,34 +1,40 @@
-🏆 Best Method Selected: Hard Cutoff (KS = 51.63%)
+🏆 Best Method Selected: Hard Cutoff (KS = 50.32%)
 
 ============================================================
 📋 CREDIT SCORECARD
 ============================================================
-Base Score: 600
-PDO (Points to Double Odds): 20
-Intercept: -0.5985
+Base Score: 600  (anchored at 1:1 odds)
+PDO (Points to Double Odds): 40
+Intercept: -0.6426
 
               Feature  Coefficient  Points per Std
-                  age       0.3504           10.11
-               income       0.6578           18.98
-credit_history_months       0.4044           11.67
-  num_credit_accounts       0.2297            6.63
-           debt_ratio      -0.7421          -21.41
-    num_late_payments      -0.9985          -28.81
+                  age       0.3744           21.61
+               income       0.6795           39.21
+credit_history_months       0.3950           22.80
+  num_credit_accounts       0.1928           11.13
+           debt_ratio      -0.7534          -43.48
+    num_late_payments      -1.0938          -63.12
 ============================================================
 
 ======================================================================
 📱 전화 가입 승인 결정 규칙
 ======================================================================
 Score Range     Risk Level  N Customers  Bad Rate (%) Decision
-    300-500 Very High Risk         2889          75.8   Reject
-    500-550      High Risk         1833          46.7   Reject
-    550-600    Medium Risk          259          20.8   Review
-    600-650       Low Risk           18          11.1  Approve
-    650-700  Very Low Risk            1           0.0  Approve
+    300-493 Very High Risk          214          93.0   Reject
+    493-593      High Risk         1696          79.7   Reject
+    593-693    Medium Risk         2422          56.2   Reject
+    693-768       Low Risk          574          31.5   Reject
+    768-850   Minimal Risk           79          11.4  Approve
 
 ----------------------------------------------------------------------
-💡 권장 정책:
-  • Score >= 600: 자동 승인
-  • 550 <= Score < 600: 수동 심사
-  • Score < 550: 자동 거절 또는 보증금 요구
+RECOMMENDED POLICY
+  - Score >= 693: auto-approve (odds 5:1, p(good) >= 83.3%)
+  - 593 <= Score < 693: manual review (p(good) >= 46.9%)
+  - Score < 593: auto-decline or require a deposit
+
+Scale:  40 points double the odds; 600 points sits at 1:1 odds (p(good) = 50.0%).
+        score = 600.00 + 57.7078 * ln(odds), clipped to 300-850.
+Policy: approve at 5:1 odds and above (p >= 83.3%), which is 693 points.
+        review from 0.8839:1 (p >= 46.9%), which is 593 points.
+        decline below that.
 ======================================================================

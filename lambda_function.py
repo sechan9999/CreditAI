@@ -11,6 +11,41 @@ MODEL_PARAMS = {
     "intercept": -0.5985
 }
 
+# --- Scale ---
+# score = SCORE_OFFSET + SCORE_FACTOR * ln(odds), where ln(odds) is the model's
+# linear predictor. Must stay identical to the constants in index.html.
+#
+# Recalibrated from PDO 20 with 600 at 5:1. On that scale the 7,000-applicant
+# population spanned only 300-658, so the top third of a declared 300-850 range
+# was never used. PDO 40 with 600 at even money spreads the same population
+# across 300-809, and the anchor states itself: 600 points means an even chance
+# of being good.
+BASE_SCORE = 600
+PDO = 40          # points to double the odds
+BASE_ODDS = 1     # odds of being good at BASE_SCORE -- even money
+SCORE_FACTOR = PDO / math.log(2)
+SCORE_OFFSET = BASE_SCORE - SCORE_FACTOR * math.log(BASE_ODDS)
+
+# --- Policy ---
+# Stated in odds; the point cutoffs are derived. These are the bars the previous
+# scale's 600 and 550 represented, preserved exactly, which is what makes the
+# recalibration a relabelling rather than a change of policy.
+# Derived from the previous scale rather than transcribed. Writing the review bar
+# out as a literal is how a rounding slip becomes a policy change: a hand-computed
+# 0.8839527 against the exact 0.8838834764831849 moves the boundary just enough to
+# flip an applicant sitting on it. Deriving it makes that impossible.
+#
+# These are the bars the previous scale's 600 and 550 points represented. Replacing
+# them with chosen round odds is a policy decision and should be made as one.
+_PREV_PDO, _PREV_BASE_SCORE, _PREV_BASE_ODDS = 20, 600, 5
+_prev_factor = _PREV_PDO / math.log(2)
+_prev_offset = _PREV_BASE_SCORE - _prev_factor * math.log(_PREV_BASE_ODDS)
+
+APPROVE_ODDS = _PREV_BASE_ODDS                                # the old 600 bar, p(good) = 83.3%
+REVIEW_ODDS = math.exp((550 - _prev_offset) / _prev_factor)    # the old 550 bar, p(good) = 46.9%
+APPROVE_AT = SCORE_OFFSET + SCORE_FACTOR * math.log(APPROVE_ODDS)
+REVIEW_AT = SCORE_OFFSET + SCORE_FACTOR * math.log(REVIEW_ODDS)
+
 def predict(input_dict):
     log_odds = MODEL_PARAMS['intercept']
     for i, feat in enumerate(MODEL_PARAMS['features']):
@@ -21,20 +56,20 @@ def predict(input_dict):
         log_odds += ((val - mean) / scale) * coef
 
     prob_good = 1 / (1 + math.exp(-log_odds))
-
-    base_score = 600
-    pdo = 20
-    base_odds = 5
     odds = prob_good / (1 - prob_good + 1e-10)
-    factor = pdo / math.log(2)
-    offset = base_score - factor * math.log(base_odds)
 
-    score = offset + factor * math.log(odds + 1e-10)
+    score = SCORE_OFFSET + SCORE_FACTOR * math.log(odds + 1e-10)
     return max(300, min(850, score)), prob_good
 
 def get_decision(score):
-    if score >= 600: return "Approve", "Minimal/Low Risk"
-    elif score >= 550: return "Review", "Medium Risk"
+    """Decide from the derived point cutoffs, never from literals.
+
+    The policy lives in APPROVE_ODDS and REVIEW_ODDS. Because the cutoffs are
+    derived from the same scale the score is, a recalibration moves both
+    together and no applicant's decision changes.
+    """
+    if score >= APPROVE_AT: return "Approve", "Minimal/Low Risk"
+    elif score >= REVIEW_AT: return "Review", "Medium Risk"
     else: return "Reject", "High/Very High Risk"
 
 def lambda_handler(event, context):

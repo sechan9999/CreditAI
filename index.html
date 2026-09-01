@@ -878,8 +878,8 @@
                     </div>
                     <div class="gauge-labels">
                         <span>300 (High Risk)</span>
-                        <span>550 (Review)</span>
-                        <span>600 (Safe)</span>
+                        <span id="gaugeReviewLabel">Review</span>
+                        <span id="gaugeApproveLabel">Approve</span>
                         <span>850 (Excellent)</span>
                     </div>
 
@@ -1060,7 +1060,7 @@
                     <div class="kpi-label">Features in severe band</div>
                 </div>
                 <div class="kpi-card">
-                    <div class="kpi-value" style="-webkit-text-fill-color: var(--warning);">0.44</div>
+                    <div class="kpi-value" style="-webkit-text-fill-color: var(--danger);">0.37</div>
                     <div class="kpi-label">Largest score shift (parceling)</div>
                 </div>
                 <div class="kpi-card">
@@ -1110,7 +1110,7 @@
                     <tbody>
                         <tr><td>Hard cutoff</td><td class="num">98.5%</td><td class="num">51.6% (best)</td><td class="num">0.13</td></tr>
                         <tr><td>Fuzzy augmentation</td><td class="num">91.7%</td><td class="num">&ndash;</td><td class="num">0.10</td></tr>
-                        <tr><td>Parceling</td><td class="num">87.1%</td><td class="num">&ndash;</td><td class="num">0.44</td></tr>
+                        <tr><td>Parceling</td><td class="num">86.8%</td><td class="num">&ndash;</td><td class="num">0.37</td></tr>
                     </tbody>
                 </table>
                 <p class="psi-note" style="margin-top:1.25rem;">
@@ -1128,11 +1128,17 @@
                     it.
                 </p>
                 <p class="psi-note" style="margin-top:0.75rem;">
-                    Still open: whether parceling shifts the model because its random draw adds label
-                    noise, or because it assigns roughly 13% of declines as <em>good</em> and those
-                    applicants have features the baseline model reads as bad &mdash; contradictory
-                    examples that force the coefficients to move. Holding the 87/13 rate fixed while
-                    making the assignment deterministic would separate the two.
+                    <strong>One finding came out of recalibrating the scorecard.</strong> Parceling used
+                    to bin applicants by their 300&ndash;850 score, using equal-width bins. That score is
+                    a cosmetic transform of the model&rsquo;s log-odds, so rescaling the card &mdash; a
+                    relabelling that changes no decision &mdash; moved the bin edges and reassigned
+                    people: the same data and the same seed produced 261, 281 and 278 declines labelled
+                    <em>good</em> under three different display scales. The labels a model trains on
+                    should not be a function of how its output is drawn. Parceling now bins on quantiles
+                    of predicted probability, which has no scale in it, and the assignment is identical
+                    under all three. That also fixed a second problem: the old equal-width bins held as
+                    few as 3 approved applicants, so some declines inherited a bad rate estimated from
+                    three observations.
                 </p>
             </div>
 
@@ -1244,14 +1250,39 @@
             }
         };
 
-        // Scorecard anchoring, derived rather than hardcoded so the three constants
-        // and the offset cannot drift apart: 600 points sits at 5:1 odds, and every
-        // 20 points doubles the odds.
+        // --- Scale ---
+        // score = SCORE_OFFSET + SCORE_FACTOR * ln(odds), and ln(odds) is the model's
+        // linear predictor, which is why a scorecard is linear in its features.
+        //
+        // Recalibrated from PDO 20 with 600 at 5:1. Under that scale the 7,000-applicant
+        // population spanned only 300-658, leaving the top third of a declared 300-850
+        // range unused. PDO 40 with 600 at even money spreads the same population across
+        // 300-809 and states the anchor in one sentence: 600 points means an even chance
+        // of being good.
         const BASE_SCORE = 600;
-        const PDO = 20;          // points to double the odds
-        const BASE_ODDS = 5;     // odds of being good at BASE_SCORE
+        const PDO = 40;          // points to double the odds
+        const BASE_ODDS = 1;     // odds of being good at BASE_SCORE -- even money
         const SCORE_FACTOR = PDO / Math.LN2;
         const SCORE_OFFSET = BASE_SCORE - SCORE_FACTOR * Math.log(BASE_ODDS);
+
+        // --- Policy ---
+        // Stated in odds, with the point cutoffs derived from it. That is what makes a
+        // rescaling safe: change PDO or the anchor and the cutoffs move with the scale,
+        // so no applicant's decision changes. These are the bars the previous scale's
+        // 600 and 550 represented, kept exactly, so the recalibration is a relabelling
+        // and not a policy change.
+        // Derived from the previous scale rather than transcribed. A hand-computed
+        // 0.8839527 against the exact 0.8838834764831849 moves the review boundary
+        // just enough to flip an applicant sitting on it, which would make a
+        // relabelling into a policy change. Deriving it makes that impossible.
+        const PREV_PDO = 20, PREV_BASE_SCORE = 600, PREV_BASE_ODDS = 5;
+        const PREV_FACTOR = PREV_PDO / Math.LN2;
+        const PREV_OFFSET = PREV_BASE_SCORE - PREV_FACTOR * Math.log(PREV_BASE_ODDS);
+
+        const APPROVE_ODDS = PREV_BASE_ODDS;                               // p(good) = 83.3%
+        const REVIEW_ODDS = Math.exp((550 - PREV_OFFSET) / PREV_FACTOR);   // p(good) = 46.9%
+        const APPROVE_AT = SCORE_OFFSET + SCORE_FACTOR * Math.log(APPROVE_ODDS);
+        const REVIEW_AT = SCORE_OFFSET + SCORE_FACTOR * Math.log(REVIEW_ODDS);
 
         // Income guidance shown under the field. The cut points are the ones a user
         // asked for; what makes them defensible is where they sit in the training
@@ -1272,6 +1303,13 @@
             const band = INCOME_BANDS.find(b => value >= b.min) || INCOME_BANDS[INCOME_BANDS.length - 1];
             const z = (value - SCALER.mean.income) / SCALER.scale.income;
             return { ...band, z: z };
+        }
+
+        function updateGaugeLabels() {
+            const r = document.getElementById('gaugeReviewLabel');
+            const a = document.getElementById('gaugeApproveLabel');
+            if (r) r.textContent = Math.round(REVIEW_AT) + ' (Review)';
+            if (a) a.textContent = Math.round(APPROVE_AT) + ' (Approve)';
         }
 
         function updateIncomeHint() {
@@ -1342,11 +1380,11 @@
             document.getElementById('scoreMarker').style.left = `${Math.max(0, Math.min(100, pct))}%`;
 
             const badge = document.getElementById('decisionBadge');
-            if (score >= 600) {
+            if (score >= APPROVE_AT) {
                 badge.textContent = "APPROVED";
                 badge.className = "decision-badge bg-success";
                 document.getElementById('riskValue').textContent = "Low Risk";
-            } else if (score >= 550) {
+            } else if (score >= REVIEW_AT) {
                 badge.textContent = "REVIEW REQUIRED";
                 badge.className = "decision-badge bg-warning";
                 document.getElementById('riskValue').textContent = "Medium Risk";
@@ -1368,8 +1406,8 @@
             const complianceStatus = inputs.age >= 18 ? 'pass' : 'fail';
 
             let decision = 'fail';
-            if (score >= 600) decision = 'pass';
-            else if (score >= 550) decision = 'warning';
+            if (score >= APPROVE_AT) decision = 'pass';
+            else if (score >= REVIEW_AT) decision = 'warning';
 
             const steps = [
                 { title: "Agent 1: Risk Factor Analysis", status: paymentStatus, icon: "shield", details: [
@@ -1387,7 +1425,7 @@
                 { title: "Final Decision Engine", status: decision, icon: "user-check", details: [
                     { label: "Final Score", value: score },
                     { label: "Confidence", value: "98.4%" },
-                    { label: "Result", value: score >= 600 ? "APPROVE" : score >= 550 ? "REVIEW" : "REJECT" }
+                    { label: "Result", value: score >= APPROVE_AT ? "APPROVE" : score >= REVIEW_AT ? "REVIEW" : "REJECT" }
                 ]}
             ];
 
@@ -1497,6 +1535,7 @@
                 }
             });
 
+            updateGaugeLabels();
             updateIncomeHint();
             switchTab('app', document.querySelector('.nav-btn'));
         }
@@ -1514,7 +1553,7 @@
                 { feature: 'credit_history_months', psi: 0.142027 }
             ],
             shift: [
-                { method: 'Parceling', psi: 0.438276 },
+                { method: 'Parceling', psi: 0.368823 },
                 { method: 'Hard cutoff', psi: 0.133416 },
                 { method: 'Fuzzy augmentation', psi: 0.096458 }
             ]
@@ -1772,7 +1811,7 @@
         }
 
         function getApplicantSummary() {
-            return `Age: ${lastInputs.age}, Monthly Income: $${lastInputs.income.toLocaleString()}, Credit History: ${lastInputs.credit_history_months} months, Open Accounts: ${lastInputs.num_credit_accounts}, Debt-to-Income Ratio: ${(lastInputs.debt_ratio * 100).toFixed(1)}%, Late Payments: ${lastInputs.num_late_payments}, Credit Score: ${lastScore}, Approval Probability: ${(lastProb * 100).toFixed(1)}%, Decision: ${lastScore >= 600 ? 'APPROVED' : lastScore >= 550 ? 'REVIEW' : 'DECLINED'}`;
+            return `Age: ${lastInputs.age}, Monthly Income: $${lastInputs.income.toLocaleString()}, Credit History: ${lastInputs.credit_history_months} months, Open Accounts: ${lastInputs.num_credit_accounts}, Debt-to-Income Ratio: ${(lastInputs.debt_ratio * 100).toFixed(1)}%, Late Payments: ${lastInputs.num_late_payments}, Credit Score: ${lastScore}, Approval Probability: ${(lastProb * 100).toFixed(1)}%, Decision: ${lastScore >= APPROVE_AT ? 'APPROVED' : lastScore >= REVIEW_AT ? 'REVIEW' : 'DECLINED'}`;
         }
 
         async function runAiExplanation() {

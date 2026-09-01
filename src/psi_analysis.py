@@ -88,6 +88,9 @@ def score_shift_psi(approved_df, rejected_df, feature_cols, methods=None,
     Legitimate use #2: compare how much each reject-inference method shifts
     the model's *score output* relative to an accepts-only baseline.
 
+    Computed on predicted probability rather than on the clipped score, so the
+    result is a property of the model and not of the current PDO.
+
     NOT legitimate, and deliberately not what this function does: comparing
     the raw-*feature* PSI of each method's augmented training sample against
     the population. Fuzzy Augmentation and Parceling both reuse every
@@ -107,7 +110,15 @@ def score_shift_psi(approved_df, rejected_df, feature_cols, methods=None,
 
     ri = RejectInference(approved_df, rejected_df, feature_cols, target_col=target_col)
     full_population = pd.concat([approved_df, rejected_df], ignore_index=True)
-    baseline_scores = ri.base_model.predict_score(full_population)
+    # Compared on the model's own output, not on the clipped 300-850 score.
+    # PSI with quantile bins taken from the baseline is invariant under any
+    # strictly monotone transform of both distributions, so probability,
+    # log-odds and an unclipped score all give the same number. np.clip is not
+    # monotone at the boundaries: it piles mass onto the floor, and how much
+    # mass depends on the chosen PDO. Measured through the clip this diagnostic
+    # moved from 0.438 to 0.711 on a pure relabelling of the scale, which means
+    # it was reporting a property of the display rather than of the model.
+    baseline_scores = ri.base_model.predict_proba(full_population)
 
     rows = []
     score_distributions = {'baseline': baseline_scores}
@@ -125,7 +136,7 @@ def score_shift_psi(approved_df, rejected_df, feature_cols, methods=None,
         else:
             raise ValueError(f"Unknown reject-inference method: {method}")
 
-        new_scores = retrained.predict_score(full_population)
+        new_scores = retrained.predict_proba(full_population)
         psi = calculate_psi(baseline_scores, new_scores, buckets=buckets)
         rows.append({'method': method, 'psi': psi, 'rating': rate_psi(psi)})
         score_distributions[method] = new_scores

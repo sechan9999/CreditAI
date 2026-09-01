@@ -7,8 +7,9 @@ from train_scoring_model import CreditScoringModel
 from ks_analysis import KSCalculator
 from reject_inference_methods import RejectInference
 from final_comparison import train_and_evaluate
+import scale
 
-def create_scorecard(model, feature_cols, base_score=600, pdo=20):
+def create_scorecard(model, feature_cols, base_score=600, pdo=40, base_odds=1):
     """
     Logistic Regression 계수를 스코어카드로 변환
     
@@ -39,7 +40,7 @@ def create_scorecard(model, feature_cols, base_score=600, pdo=20):
     output = "\n" + "=" * 60 + "\n"
     output += "📋 CREDIT SCORECARD\n"
     output += "=" * 60 + "\n"
-    output += f"Base Score: {base_score}\n"
+    output += f"Base Score: {base_score}  (anchored at {base_odds}:1 odds)\n"
     output += f"PDO (Points to Double Odds): {pdo}\n"
     output += f"Intercept: {intercept:.4f}\n\n"
     output += scorecard_df.to_string(index=False) + "\n"
@@ -55,13 +56,14 @@ def create_decision_rules(model, df, feature_cols):
     targets = df['target'].values
     
     # 점수 구간별 분석
+    rev = round(scale.REVIEW_AT)
+    app = round(scale.APPROVE_AT)
     score_ranges = [
-        (300, 500, "Very High Risk"),
-        (500, 550, "High Risk"),
-        (550, 600, "Medium Risk"),
-        (600, 650, "Low Risk"),
-        (650, 700, "Very Low Risk"),
-        (700, 850, "Minimal Risk")
+        (scale.SCORE_MIN, rev - 100, "Very High Risk"),
+        (rev - 100, rev, "High Risk"),
+        (rev, app, "Medium Risk"),
+        (app, app + 75, "Low Risk"),
+        (app + 75, scale.SCORE_MAX, "Minimal Risk"),
     ]
     
     output = "\n" + "=" * 70 + "\n"
@@ -86,13 +88,17 @@ def create_decision_rules(model, df, feature_cols):
     output += rules_df.to_string(index=False) + "\n"
     
     output += "\n" + "-" * 70 + "\n"
-    output += "💡 권장 정책:\n"
-    output += "  • Score >= 600: 자동 승인\n"
-    output += "  • 550 <= Score < 600: 수동 심사\n"
-    output += "  • Score < 550: 자동 거절 또는 보증금 요구\n"
+    output += "RECOMMENDED POLICY\n"
+    output += f"  - Score >= {round(scale.APPROVE_AT)}: auto-approve "
+    output += f"(odds {scale.APPROVE_ODDS}:1, p(good) >= "
+    output += f"{scale.APPROVE_ODDS / (1 + scale.APPROVE_ODDS):.1%})\n"
+    output += f"  - {round(scale.REVIEW_AT)} <= Score < {round(scale.APPROVE_AT)}: manual review "
+    output += f"(p(good) >= {scale.REVIEW_ODDS / (1 + scale.REVIEW_ODDS):.1%})\n"
+    output += f"  - Score < {round(scale.REVIEW_AT)}: auto-decline or require a deposit\n"
+    output += "\n" + scale.describe()
     output += "=" * 70 + "\n"
     print(output)
-    
+
     return rules_df, output
 
 if __name__ == "__main__":

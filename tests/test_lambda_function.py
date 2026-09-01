@@ -4,7 +4,8 @@ import json
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from lambda_function import predict, get_decision, lambda_handler
+from lambda_function import (predict, get_decision, lambda_handler,
+                             APPROVE_AT, REVIEW_AT)
 
 
 class TestLambdaPredict:
@@ -47,29 +48,38 @@ class TestLambdaPredict:
 
 
 class TestGetDecision:
+    """Decisions are asserted relative to the derived cutoffs.
+
+    A literal like get_decision(650) == "Approve" was true under the old scale
+    and false after recalibration, without anything about the policy having
+    changed. Anchoring the assertions to APPROVE_AT and REVIEW_AT keeps them
+    testing the policy rather than the labelling.
+    """
+
     def test_approve(self):
-        decision, risk = get_decision(650)
+        decision, risk = get_decision(APPROVE_AT + 25)
         assert decision == "Approve"
 
     def test_review(self):
-        decision, risk = get_decision(575)
+        decision, risk = get_decision((APPROVE_AT + REVIEW_AT) / 2)
         assert decision == "Review"
 
     def test_reject(self):
-        decision, risk = get_decision(400)
+        decision, risk = get_decision(REVIEW_AT - 100)
         assert decision == "Reject"
 
-    def test_boundary_600(self):
-        decision, _ = get_decision(600)
-        assert decision == "Approve"
+    def test_boundary_approve(self):
+        # Asserted against the derived cutoff rather than a literal, so a
+        # recalibration cannot leave the tests checking a stale scale.
+        assert get_decision(APPROVE_AT)[0] == "Approve"
+        assert get_decision(APPROVE_AT - 0.01)[0] == "Review"
 
-    def test_boundary_550(self):
-        decision, _ = get_decision(550)
-        assert decision == "Review"
+    def test_boundary_review(self):
+        assert get_decision(REVIEW_AT)[0] == "Review"
+        assert get_decision(REVIEW_AT - 0.01)[0] == "Reject"
 
-    def test_boundary_549(self):
-        decision, _ = get_decision(549)
-        assert decision == "Reject"
+    def test_cutoffs_ordered_and_inside_range(self):
+        assert 300 < REVIEW_AT < APPROVE_AT < 850
 
 
 class TestLambdaHandler:
