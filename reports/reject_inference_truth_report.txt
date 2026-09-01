@@ -1,0 +1,41 @@
+============================================================================================
+REJECT INFERENCE, SCORED AGAINST THE OUTCOME IT IS GUESSING AT
+============================================================================================
+
+  approved            5,000  (train 3,500 / test 1,500)
+  declined            2,000  -- true_good known here, and used only for scoring
+  good rate, approved 0.6878
+  good rate, declined 0.3970
+
+  "seen"   = approved test half, outcome observed the ordinary way
+  "unseen" = the whole declined population, scored against true_good
+
+             method AUC seen KS seen AUC unseen KS unseen  would approve of those, good
+none (accepts only)   0.6916  0.2943     0.6715    0.2766              0              -
+        hard cutoff   0.6919  0.2959     0.6714    0.2767              5         0.8000
+ fuzzy augmentation   0.6906  0.2909     0.6705    0.2753              0              -
+          parceling   0.6901  0.2877     0.6703    0.2692              0              -
+
+--------------------------------------------------------------------------------------------
+READING
+--------------------------------------------------------------------------------------------
+  best on the population you can see    hard cutoff
+  best on the population you cannot     none (accepts only)
+
+  These disagree, which is the whole argument. Selecting a
+  reject-inference method on the accepted population picks the wrong one.
+
+  Lift over doing no reject inference at all, on the declined population:
+    hard cutoff            AUC -0.0001   KS +0.0002
+    fuzzy augmentation     AUC -0.0010   KS -0.0012
+    parceling              AUC -0.0011   KS -0.0073
+
+  The last two columns are the business question: if this model were used to
+  reconsider the declined applicants, how many would it approve, and what
+  share of those were actually good? The declined base rate is 39.7%.
+
+  CAVEAT: true_good exists here because the data is synthetic. A real lender
+  has no such column, which is why reject inference exists. What this shows
+  is which method to reach for -- not a measurement you can repeat in
+  production without deliberately approving a randomised slice of declines.
+============================================================================================

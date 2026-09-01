@@ -5,6 +5,7 @@ from mangum import Mangum
 import json
 import os
 import math
+import scale
 
 # Initialize App
 app = FastAPI(
@@ -25,7 +26,11 @@ handler = Mangum(app)
 
 # Load Parameters
 BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PARAMS_PATH = os.path.join(BASE_PATH, 'data', 'processed', 'model_params.json')
+# One params file, one schema: src/model_params.json, written by
+# src/extract_model_params.py. This used to read a second file in
+# data/processed/ with different key names, which is how retraining stopped
+# reaching anything that served predictions.
+PARAMS_PATH = os.path.join(BASE_PATH, 'src', 'model_params.json')
 
 try:
     with open(PARAMS_PATH, 'r') as f:
@@ -41,9 +46,9 @@ def predict(input_dict):
         raise ValueError("Model parameters not loaded")
 
     features = params['features']
-    scale_mean = params['scale_mean']
-    scale_scale = params['scale_scale']
-    coef = params['coef']
+    scale_mean = params['means']
+    scale_scale = params['scales']
+    coef = params['coefs']
     intercept = params['intercept']
 
     # 1. Prepare Vector & Scale
@@ -64,17 +69,13 @@ def predict(input_dict):
     prob = 1 / (1 + math.exp(-linear_pred))
 
     # 4. Score
-    base_score = params['base_score']
-    pdo = params['pdo']
-    base_odds = params['base_odds']
-
+    #
+    # The scale comes from src/scale.py, not from the params file. It used to be
+    # carried in the params JSON as well, which meant pdo and base_odds existed in
+    # four places at once and drifted apart.
     odds = prob / (1 - prob + 1e-10)
-
-    factor = pdo / math.log(2)
-    offset = base_score - factor * math.log(base_odds)
-
-    score = offset + factor * math.log(odds + 1e-10)
-    score = max(300, min(850, score))
+    score = scale.SCORE_OFFSET + scale.SCORE_FACTOR * math.log(odds + 1e-10)
+    score = max(scale.SCORE_MIN, min(scale.SCORE_MAX, score))
 
     return score, prob
 

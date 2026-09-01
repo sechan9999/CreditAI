@@ -4,49 +4,49 @@ GBM vs LOGISTIC SCORECARD, WITH AND WITHOUT REJECT INFERENCE
 
 Approved population        5,000 (train 3,500 / test 1,500)
 Declined population        2,000, no observed outcome
-Parceling labelled good    271 of 2,000 (13.6%)
-Test-set good rate         0.379
+Parceling labelled good    877 of 2,000 (43.9%)
+Test-set good rate         0.688
 
 Scored on the held-out APPROVED half only, where outcomes were observed.
 A random split of the augmented set would put inferred labels in the test
 set and measure agreement with the assumption instead of accuracy.
 
    training set                          model    AUC     KS  Brier mean p(good) actual good rate  approve @693
-A: accepts only Logistic (balanced) - deployed 0.7252 0.3241 0.2103       0.4794           0.3787            72
-A: accepts only          Logistic (unweighted) 0.7252 0.3209 0.1994       0.3788           0.3787            27
-A: accepts only              Gradient boosting 0.6970 0.2905 0.2086       0.3815           0.3787            27
-A: accepts only                  Random forest 0.7039 0.3058 0.2162       0.4777           0.3787            15
-A: accepts only       Stacking (LR + GBM + RF) 0.7247 0.3183 0.1997       0.3781           0.3787            18
- B: + parceling Logistic (balanced) - deployed 0.7255 0.3242 0.2420       0.5777           0.3787            59
- B: + parceling          Logistic (unweighted) 0.7256 0.3245 0.2010       0.3839           0.3787             8
- B: + parceling              Gradient boosting 0.7038 0.3003 0.2062       0.3762           0.3787            19
- B: + parceling                  Random forest 0.7094 0.3230 0.2340       0.5475           0.3787            68
- B: + parceling       Stacking (LR + GBM + RF) 0.7239 0.3238 0.2024       0.3582           0.3787             0
+A: accepts only Logistic (balanced) - deployed 0.6916 0.2925 0.2249       0.5166           0.6880            41
+A: accepts only          Logistic (unweighted) 0.6916 0.2943 0.1947       0.6843           0.6880           257
+A: accepts only              Gradient boosting 0.6810 0.3009 0.1986       0.6870           0.6880           260
+A: accepts only                  Random forest 0.6803 0.2840 0.2228       0.5278           0.6880             9
+A: accepts only       Stacking (LR + GBM + RF) 0.6918 0.2988 0.1951       0.6843           0.6880           191
+ B: + parceling Logistic (balanced) - deployed 0.6904 0.2886 0.2029       0.5998           0.6880            59
+ B: + parceling          Logistic (unweighted) 0.6901 0.2877 0.1955       0.6819           0.6880           160
+ B: + parceling              Gradient boosting 0.6846 0.3000 0.1971       0.6773           0.6880           212
+ B: + parceling                  Random forest 0.6805 0.2847 0.2052       0.5974           0.6880            66
+ B: + parceling       Stacking (LR + GBM + RF) 0.6905 0.3020 0.1991       0.6625           0.6880             0
 
 ----------------------------------------------------------------------------------------
 READING
 ----------------------------------------------------------------------------------------
-Best AUC: Logistic (unweighted) on B: + parceling (0.7256)
-Deployed scorecard, accepts only: AUC 0.7252, KS 0.3241
-Gap to best: +0.0004 AUC
+Best AUC: Stacking (LR + GBM + RF) on A: accepts only (0.6918)
+Deployed scorecard, accepts only: AUC 0.6916, KS 0.2925
+Gap to best: +0.0002 AUC
 
 CALIBRATION -- the part that matters for a scorecard.
 The deployed model uses class_weight="balanced", which reweights the classes
 and therefore calibrates probabilities to a 50/50 prior rather than to the
 population base rate. The score maps probability to points as if the
 probability were the real one, so a shift here shifts every score.
-  Logistic (balanced) - deployed   A: accepts only    mean p 0.479 vs actual 0.379  Brier 0.2103
-  Logistic (balanced) - deployed   B: + parceling     mean p 0.578 vs actual 0.379  Brier 0.2420
-  Logistic (unweighted)            A: accepts only    mean p 0.379 vs actual 0.379  Brier 0.1994
-  Logistic (unweighted)            B: + parceling     mean p 0.384 vs actual 0.379  Brier 0.2010
+  Logistic (balanced) - deployed   A: accepts only    mean p 0.517 vs actual 0.688  Brier 0.2249
+  Logistic (balanced) - deployed   B: + parceling     mean p 0.600 vs actual 0.688  Brier 0.2029
+  Logistic (unweighted)            A: accepts only    mean p 0.684 vs actual 0.688  Brier 0.1947
+  Logistic (unweighted)            B: + parceling     mean p 0.682 vs actual 0.688  Brier 0.1955
 
 Decomposed, the balancing is almost entirely an intercept shift:
-  slope correlation between the two fits   0.999979
-  largest slope difference                 0.0045
-  intercept difference                     +0.4923 in log-odds
+  slope correlation between the two fits   0.999962
+  largest slope difference                 0.0069
+  intercept difference                     -0.7894 in log-odds
 
 A constant log-odds shift times the scale factor is a constant point shift:
-  0.4923 x 57.7078 = +28.4 points on every applicant
+  -0.7894 x 57.7078 = -45.6 points on every applicant
 
 So the weighting buys no ranking -- a monotone shift cannot change AUC, and it
 does not: both fits score 0.7252. What it changes is the meaning of the number.
@@ -61,15 +61,15 @@ isotonic) before the points mapping. Either changes approval volume, so it is
 a decision to make deliberately rather than a silent correction.
 
 DECISION IMPACT at the 693-point approve bar, out of 1,500 test applicants:
-  A: accepts only    Logistic (balanced) - deployed   approves   72
-  A: accepts only    Logistic (unweighted)            approves   27
-  A: accepts only    Gradient boosting                approves   27
-  A: accepts only    Random forest                    approves   15
-  A: accepts only    Stacking (LR + GBM + RF)         approves   18
+  A: accepts only    Logistic (balanced) - deployed   approves   41
+  A: accepts only    Logistic (unweighted)            approves  257
+  A: accepts only    Gradient boosting                approves  260
+  A: accepts only    Random forest                    approves    9
+  A: accepts only    Stacking (LR + GBM + RF)         approves  191
   B: + parceling     Logistic (balanced) - deployed   approves   59
-  B: + parceling     Logistic (unweighted)            approves    8
-  B: + parceling     Gradient boosting                approves   19
-  B: + parceling     Random forest                    approves   68
+  B: + parceling     Logistic (unweighted)            approves  160
+  B: + parceling     Gradient boosting                approves  212
+  B: + parceling     Random forest                    approves   66
   B: + parceling     Stacking (LR + GBM + RF)         approves    0
 
 LIMIT: every row is scored on approved applicants. Which model is better on

@@ -3,16 +3,16 @@
 📈 Logistic Regression 모델 계수
 ============================================================
               feature  coefficient  odds_ratio
-               income     0.532037    1.702396
-credit_history_months     0.341145    1.406558
-                  age     0.290395    1.336956
-  num_credit_accounts     0.153425    1.165821
-           debt_ratio    -0.414035    0.660978
-    num_late_payments    -0.508222    0.601564
+credit_history_months     0.587161    1.798875
+               income     0.399849    1.491600
+                  age     0.004654    1.004665
+  num_credit_accounts    -0.069819    0.932562
+           debt_ratio    -0.342603    0.709920
+    num_late_payments    -0.353814    0.702005
 
-Intercept: -0.0827
+Intercept: 0.8876
 ============================================================
 
 📊 점수 분포:
-Train - Mean: 484.7, Std: 26.9
-Test  - Mean: 485.2, Std: 28.7
+Train - Mean: 651.2, Std: 42.9
+Test  - Mean: 650.3, Std: 42.9

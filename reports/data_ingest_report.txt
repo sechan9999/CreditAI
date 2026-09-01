@@ -1,0 +1,26 @@
+==============================================================================
+DATA INGESTED
+==============================================================================
+  rows                      7,000
+  approved / declined       5,000 / 2,000
+  observed good rate        0.6878  (approved only)
+
+  true_good is present for every applicant, including the declined:
+    good rate, approved     0.6878
+    good rate, declined     0.3970
+    the declined population is 1.93x more likely to be bad
+
+  This is the column that makes reject inference testable. It is the
+  answer, not a feature: train without it, then score against it.
+
+  feature                          min        mean         max
+  ------------------------------------------------------------
+  age                           18.000      45.688      74.000
+  income                      5109.240   41329.479  220411.530
+  credit_history_months          0.000     119.593     239.000
+  num_credit_accounts            0.000       3.012      12.000
+  debt_ratio                     0.004       0.285       0.877
+  num_late_payments              0.000       1.179       7.000
+
+  income is ANNUAL USD. Nothing downstream converts it.
+==============================================================================

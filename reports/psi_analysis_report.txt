@@ -6,19 +6,19 @@ PSI DIAGNOSTICS
 1) Selection bias -- approved vs. rejected raw feature distributions
 ------------------------------------------------------------------------
               feature      psi         rating
-    num_late_payments 1.415426   Severe shift
-           debt_ratio 1.393152   Severe shift
-               income 0.529782   Severe shift
-  num_credit_accounts 0.433807   Severe shift
-                  age 0.229023 Moderate shift
-credit_history_months 0.142027 Moderate shift
+credit_history_months 2.066600   Severe shift
+    num_late_payments 0.270094   Severe shift
+               income 0.223669 Moderate shift
+           debt_ratio 0.168461 Moderate shift
+  num_credit_accounts 0.002975         Stable
+                  age 0.002742         Stable
 
 2) Score shift -- each reject-inference method vs. accepts-only baseline
 ------------------------------------------------------------------------
-            method      psi         rating
-         parceling 0.368823   Severe shift
-       hard_cutoff 0.133416 Moderate shift
-fuzzy_augmentation 0.096458         Stable
+            method      psi       rating
+       hard_cutoff 0.342613 Severe shift
+         parceling 0.082497       Stable
+fuzzy_augmentation 0.032536       Stable
 
 Note: a raw-feature PSI comparing each method's augmented training
 sample to the population is NOT included above. Fuzzy Augmentation and

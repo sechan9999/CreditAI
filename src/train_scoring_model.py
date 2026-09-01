@@ -17,10 +17,28 @@ class CreditScoringModel:
     def __init__(self, feature_cols):
         self.feature_cols = feature_cols
         self.scaler = StandardScaler()
+        # class_weight='balanced' was removed deliberately.
+        #
+        # It buys nothing here and costs a lot. For logistic regression the
+        # balancing is almost purely an intercept shift -- fit both ways and the
+        # slopes correlate at 0.99998 -- and a constant shift in log-odds cannot
+        # change a ranking, so AUC is identical to four decimals either way.
+        #
+        # What it does change is the meaning of the probability, and this model's
+        # probability is not a diagnostic. It is fed straight into a scorecard
+        # anchored on odds: score = offset + factor * ln(odds). On this data the
+        # balancing moved the intercept by -0.7894, which is -45.6 points on every
+        # applicant, and dropped approvals at the 693-point bar from 257 to 41 out
+        # of 1,500. The policy says approve at p(good) >= 83.3%; with probabilities
+        # 25 points low the system was declining applicants who met its own bar.
+        #
+        # If a future dataset is imbalanced enough that the fit needs weighting,
+        # weight it and then calibrate (Platt or isotonic on a holdout) before the
+        # points mapping -- do not feed weighted probabilities into an odds-anchored
+        # scale.
         self.model = LogisticRegression(
             penalty='l2',           # L2 정규화
             C=1.0,                  # 정규화 강도
-            class_weight='balanced', # 클래스 불균형 처리
             max_iter=1000,
             random_state=42
         )
