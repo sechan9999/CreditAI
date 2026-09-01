@@ -2,3 +2,24 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+
+# Report outputs belong in reports/ and are committed from there. These patterns
+# catch the same files written to the wrong directory, which has happened: stale
+# copies of psi_analysis_report.txt sat in the repo root and in tests/ for long
+# enough to disagree with the tracked one, and a reader had no way to tell which
+# was current.
+/psi_analysis_report.txt
+/psi_chart.png
+/gbm_comparison_report.txt
+/reject_inference_truth_report.txt
+/data_ingest_report.txt
+tests/*.txt
+tests/*.png
+
+# Unpacking a patch inside tests/ creates a second copy of the test files, which
+# pytest then collects alongside the real ones and fails on. Extract elsewhere.
+tests/test/
+
+# Local scratch: supplied exports, patches and PDFs live outside version control.
+/snowflake/
+/*.pdf

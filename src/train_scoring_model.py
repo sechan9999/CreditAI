@@ -19,10 +19,16 @@ class CreditScoringModel:
         self.scaler = StandardScaler()
         # class_weight='balanced' was removed deliberately.
         #
-        # It buys nothing here and costs a lot. For logistic regression the
-        # balancing is almost purely an intercept shift -- fit both ways and the
-        # slopes correlate at 0.99998 -- and a constant shift in log-odds cannot
-        # change a ranking, so AUC is identical to four decimals either way.
+        # It buys nothing here and costs a lot, measured on this data with the
+        # approved test half held out: AUC 0.6916 either way, a difference of
+        # 0.00001, and the two score orderings correlate at 0.99987 by Spearman.
+        # For logistic regression the balancing is almost purely an intercept
+        # shift -- the slopes correlate at 0.99996 -- and a constant shift in
+        # log-odds cannot change a ranking. Brier, which does see calibration,
+        # goes the other way: 0.2249 balanced against 0.1947 unweighted.
+        #
+        # The class split here is 69/31. "balanced" is a tool for severe
+        # imbalance; at this ratio it solves a problem the data does not have.
         #
         # What it does change is the meaning of the probability, and this model's
         # probability is not a diagnostic. It is fed straight into a scorecard
