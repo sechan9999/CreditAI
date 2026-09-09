@@ -57,9 +57,9 @@ st.markdown(
 )
 
 
-@st.cache_resource(show_spinner="Training reject-inference + XGBoost pipeline (one-time, ~30s)...")
+@st.cache_resource(show_spinner="Loading CreditAI model pipeline...")
 def get_artifacts():
-    return model.train_all()
+    return model.get_or_train_artifacts()
 
 
 artifacts = get_artifacts()
@@ -113,7 +113,7 @@ with tab_score:
                 gauge={
                     "axis": {"range": [SCORE_MIN, SCORE_MAX], "tickwidth": 1},
                     "bar": {"color": color},
-                    "steps": [{"range": [lo, hi], "color": c + "33"} for lo, hi, _, c in RISK_BANDS],
+                    "steps": [{"range": [lo, hi], "color": bg} for lo, hi, _, _, bg in RISK_BANDS],
                 },
                 domain={"x": [0, 1], "y": [0, 1]},
             ))
