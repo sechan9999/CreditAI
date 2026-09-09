@@ -1,0 +1,37 @@
+========================================================================================
+XGBOOST REJECT-INFERENCE SIGNAL, EVALUATED AGAINST THE DEPLOYED SCORECARD
+========================================================================================
+
+Approved population        5,000 (train 3,500 / test 1,500)
+Declined population        2,000, no observed outcome
+Parceling labelled good    877 of 2,000 (43.9%)
+Test-set good rate         0.688
+
+Scored on the held-out APPROVED half only -- see gbm_comparison.py for why.
+
+                        model    AUC     KS  Brier mean p(good) actual good rate  approve @693
+Logistic (deployed scorecard) 0.6916 0.2943 0.1947       0.6843           0.6880           257
+    XGBoost (A: accepts only) 0.6791 0.3057 0.1976       0.6838           0.6880           144
+     XGBoost (B: + parceling) 0.6791 0.2807 0.1973       0.6702           0.6880           146
+
+----------------------------------------------------------------------------------------
+READING
+----------------------------------------------------------------------------------------
+XGBoost, accepts only:      AUC 0.6791, KS 0.3057
+XGBoost, + parceling:       AUC 0.6791, KS 0.2807
+Deployed logistic scorecard: AUC 0.6916, KS 0.2943
+Gap, deployed vs. XGBoost+parceling: -0.0126 AUC
+
+This does not beat the scorecard on this data -- consistent with
+gbm_comparison.py, which found the same for plain gradient boosting.
+It ships as a SEPARATE signal next to the rule-based verdict, not a
+replacement for it.
+
+CAVEAT ON THE REJECT-INFERENCE PART, from reject_inference_truth_report.txt:
+scored against this synthetic dataset's (otherwise unobservable) true
+outcome for declined applicants, parceling scored WORSE than doing no
+reject inference at all (AUC -0.0011, KS -0.0073 vs. accepts-only). A real
+deployment cannot run that check -- it needs a randomised approval slice --
+so this model is shown as what reject inference produces, not endorsed as
+an improvement over the alternative.
+========================================================================================

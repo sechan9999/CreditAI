@@ -20,6 +20,10 @@ telco_credit_assessment/
     ├── final_comparison.py         # Step 6: Compare all models
     ├── create_scorecard_policy.py  # Step 7: Create Scorecard and Policy Rules
     ├── psi_analysis.py             # Step 7-2: PSI diagnostics (selection bias + score shift)
+    ├── gbm_comparison.py           # Step 7-3: GBM/RF/stacking vs. the logistic scorecard
+    ├── train_xgb_signal.py         # Step 7-4: Train the XGBoost reject-inference ML signal
+    ├── extract_xgb_params.py       # Step 7-5: Pickle -> src/xgb_model_params.json (with parity check)
+    ├── sync_xgb_params.py          # Step 7-6: JSON -> index.html's embedded JS tree walker
     ├── app.py                      # Step 8: FastAPI Server
     └── load_test.py                # Step 9: Load testing script
 ```
@@ -28,7 +32,7 @@ telco_credit_assessment/
 
 1.  **Install Dependencies:**
     ```bash
-    pip install pandas numpy scikit-learn matplotlib plotly joblib fastapi uvicorn requests pydantic
+    pip install pandas numpy scikit-learn matplotlib plotly joblib fastapi uvicorn requests pydantic xgboost
     ```
 
 2.  **Run Pipeline Steps:**
@@ -50,6 +54,14 @@ telco_credit_assessment/
 
     # 6. PSI Diagnostics (selection bias + reject-inference method comparison)
     python src/psi_analysis.py
+
+    # 7. Train the XGBoost ML signal, then regenerate the JSON and the
+    #    embedded JS in index.html that ships it (run all three after any
+    #    retrain -- each writes the input the next one reads)
+    python src/train_xgb_signal.py
+    python src/extract_xgb_params.py
+    python src/sync_xgb_params.py
+    python -m pytest tests/test_xgb_signal.py
     ```
 
 3.  **Run API Server:**
@@ -91,6 +103,17 @@ To ensure transparency in our credit decisions, I implemented **SHAP** analysis:
 The score-shift PSI is the non-tautological alternative: since it measures the model's *output* after retraining on each method's labels, it actually discriminates between the methods. In a typical run: Fuzzy Augmentation stays close to the baseline (PSI < 0.10, "Stable") because its soft/continuous weighting doesn't inject hard label noise, Hard Cutoff shows a moderate shift, and Parceling shows a severe shift (PSI > 0.25) because its per-applicant random draw adds real label noise on top of the same feature vectors.
 
 Running `python src/psi_analysis.py` writes both tables to `reports/psi_analysis_report.txt` and a two-panel chart to `reports/psi_chart.png`.
+
+### 🌲 ML Signal: XGBoost (reject-inference), shown *alongside* the verdict
+
+The app's **AI Pipeline** tab now carries a fifth, visually distinct card next to Agents 1-3 and the Final Decision Engine: a second, independent opinion from an XGBoost model, trained on the parceling-augmented data from `reject_inference_methods.py`. It is deliberately **advisory only** — it does not feed `calculateScore()`, it cannot change an approval, and the card says so. `tests/test_xgb_signal.py` checks that structurally, not just by convention: `calculateScore()` is asserted not to call `xgbPredictProba()` at all.
+
+Two honest caveats, not glossed over:
+
+- **It does not beat the deployed scorecard on this data.** `src/train_xgb_signal.py` evaluates it the same way `gbm_comparison.py` evaluates gradient boosting — on the approved population, split *before* reject inference runs, scored on the held-out half where outcomes were actually observed. Full numbers in `reports/xgb_signal_report.txt`.
+- **Reject inference itself is not shown to help here.** `reports/reject_inference_truth_report.txt` scored parceling against this synthetic dataset's otherwise-unobservable true outcome for declined applicants, and parceling came out *worse* than doing no reject inference at all. A real deployment can't run that check — it needs a randomised approval slice — so the model ships as what reject inference produces, not as a proven improvement.
+
+**How it gets from a `.pkl` to the browser:** the model is small on purpose (`max_depth=3`, 40 trees, ~600 nodes total) because it is dumped tree-by-tree into `src/xgb_model_params.json` (`extract_xgb_params.py`) and walked by a ~20-line JS function embedded in `index.html` (`sync_xgb_params.py`) — the same "generate the deployed copy, don't hand-type it" pattern `extract_model_params.py`/`sync_deployed_params.py` use for the logistic scorecard. The one subtlety a hand-written port would likely miss: XGBoost compares split thresholds at **float32** precision internally, so a JS walker comparing at full float64 precision disagrees right at a threshold that sits exactly on a training value. The fix is `Math.fround()` on both sides of every comparison; `tests/test_xgb_signal.py` extracts the literal `<script>` block from `index.html`, runs it in Node, and checks its output against `xgboost`'s own `predict_proba` on all 7,000 rows (max error < 1e-6) so this can't silently drift back.
 
 ## A note on the data and the scale
 

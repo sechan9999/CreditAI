@@ -11,3 +11,4 @@ requests>=2.26.0
 python-multipart
 mangum>=0.17.0
 shap>=0.42.0
+xgboost>=2.0.0
