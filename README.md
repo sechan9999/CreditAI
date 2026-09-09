@@ -35,9 +35,9 @@ telco_credit_assessment/
 └── pipeline_tab.png                # AI Pipeline architectural dashboard capture
 ```
 
-## How to Run
+## How to Run 
 
-### 1. Interactive Streamlit App
+### 1. Interactive Streamlit App   https://creditai2.streamlit.app/
 Run the full interactive web application locally:
 ```bash
 cd creditai_app
